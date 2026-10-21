@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="../GenteFit.Datos/GenteFit.Datos.csproj" />
+  <Project Path="../GenteFit.Web/GenteFit.Web.csproj" />
+  <Project Path="GenteFit.Demo.csproj" />
+</Solution>
