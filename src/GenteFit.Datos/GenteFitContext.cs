@@ -8,7 +8,10 @@ namespace GenteFit.Datos
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseSqlServer(@"Server=(localdb)\MSSQLLocalDB;Database=GenteFitDB;Trusted_Connection=True;TrustServerCertificate=True;");
+            // Mac: usa la variable GENTEFIT_BD (Docker). Windows: si no existe, usa LocalDB.
+            var cadena = Environment.GetEnvironmentVariable("GENTEFIT_BD")
+                         ?? @"Server=(localdb)\MSSQLLocalDB;Database=GenteFitDB;Trusted_Connection=True;TrustServerCertificate=True;";
+            optionsBuilder.UseSqlServer(cadena);
         }
     }
 }
