@@ -1,6 +1,7 @@
 ﻿using GenteFit.Datos;
 using Microsoft.EntityFrameworkCore;
 using System.Text.RegularExpressions;
+using System.Xml;
 using System.Xml.Linq;
 
 namespace GenteFit.Demo
@@ -47,6 +48,12 @@ namespace GenteFit.Demo
                     MostrarError($"[{ex.Codigo}] {ex.Message}");
                     context.ChangeTracker.Clear(); // Descartar cambios pendientes
                 }
+                catch (OperationCanceledException)
+                {
+                    // Se ha escrito 0 en un campo: se vuelve al menú sin guardar nada
+                    Console.WriteLine("Operación cancelada.");
+                    context.ChangeTracker.Clear();
+                }
                 catch (Exception ex)
                 {
                     // Cualquier otro error inesperado: tamppoco cierra el programa
@@ -60,7 +67,7 @@ namespace GenteFit.Demo
         // El DNI o el email repetidos no se pueden comprobar aquí: los rechaza la base de datos (E-04).
         static void Alta(GenteFitContext context)
         {
-            Console.WriteLine("Los campos marcados con * son obligatorios.");
+            Console.WriteLine("Los campos marcados con * son obligatorios. Escribe 0 para cancelar.");
             var cliente = new Cliente
             {
                 Dni = Pedir("DNI", true, ValidarDni)!.ToUpperInvariant(),
@@ -130,7 +137,7 @@ namespace GenteFit.Demo
             var cliente = repositorio.ObtenerPorId(id);
             if (cliente == null) { MostrarError($"No existe ningún cliente con id {id}."); return; }
 
-            Console.WriteLine("Deja un campo vacío para no cambiarlo.");
+            Console.WriteLine("Deja un campo vacío para no cambiarlo. Escribe 0 para cancelar.");
             cliente.Dni = Pedir("DNI", true, ValidarDni, cliente.Dni)!.ToUpperInvariant();
             cliente.Nombre = Pedir("Nombre", true, t => ValidarTexto(t, 60), cliente.Nombre)!;
             cliente.Apellidos = Pedir("Apellidos", true, t => ValidarTexto(t, 100), cliente.Apellidos)!;
@@ -142,41 +149,158 @@ namespace GenteFit.Demo
             MostrarExito($"Cliente {cliente.Nombre} {cliente.Apellidos} (id {cliente.Id}) modificado.");
         }
 
+        // Exporta todos los clientes a xml/salida/clientes.xml, en UTF-8.
+        // XDocument escapa solo los caracteres especiales (&, <, >...), así que acentos y apóstrofes se guardan bien.
         static void ExportarXml(GenteFitContext context)
         {
-            var clientes = context.Clientes.ToList();
+            var repositorio = new RepositorioEF<Cliente>(context);
+            var clientes = repositorio.Listar();
+
             var doc = new XDocument(
-                new XElement("Clientes",
-                    clientes.Select(c =>
-                        new XElement("Cliente",
-                            new XElement("Id", c.Id),
-                            new XElement("Nombre", c.Nombre),
-                            new XElement("Email", c.Email)))));
-            doc.Save("clientes.xml");
-            MostrarExito("Exportado a clientes.xml");
-        }
+                new XDeclaration("1.0", "utf-8", null),
+                new XElement("clientes",
+                    new XAttribute("exportado", DateTime.Now.ToString("s")),
+                    new XAttribute("total", clientes.Count),
+                    clientes.Select(c => new XElement("cliente",
+                        new XAttribute("dni", c.Dni),
+                        new XElement("nombre", c.Nombre),
+                        new XElement("apellidos", c.Apellidos),
+                        new XElement("email", c.Email),
+                        c.Telefono is null ? null : new XElement("telefono", c.Telefono),
+                        new XElement("fechaAlta", c.FechaAlta.ToString("yyyy-MM-dd")),
+                        c.FechaBaja is null ? null : new XElement("fechaBaja", c.FechaBaja.Value.ToString("yyyy-MM-dd")),
+                        new XElement("activo", c.Activo)))));
 
-        static void ImportarXml(GenteFitContext context)
-        {
-            if (!File.Exists("clientes.xml")) { MostrarError("No se encuentra el archivo clientes.xml"); return; }
-
+            string carpeta = Path.Combine(CarpetaXml(), "salida");
+            string ruta = Path.Combine(carpeta, "clientes.xml");
             try
             {
-                var doc = XDocument.Load("clientes.xml");
-                foreach (var el in doc.Root.Elements("Cliente"))
-                {
-                    var nombre = el.Element("Nombre")?.Value;
-                    var email = el.Element("Email")?.Value;
-                    if (nombre != null && email != null)
-                        context.Clientes.Add(new Cliente { Nombre = nombre, Email = email });
-                }
-                context.SaveChanges();
-                MostrarExito("Importado desde clientes.xml");
+                Directory.CreateDirectory(carpeta);
+                doc.Save(ruta);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
-                MostrarError($"Error al importar el XML: {ex.Message}");
+                throw new GenteFitException("X-04", $"No se puede escribir el fichero {ruta}: {ex.Message}");
             }
+            MostrarExito($"Exportados {clientes.Count} clientes a {ruta}");
+        }
+
+        // Importa clientes de un fichero de xml/entrada.
+        // Si el fichero no se puede leer (no existe, está mal formado...), se avisa y no se importa nada.
+        // Si un cliente tiene datos incorrectos, se descarta indicando su línea y se importan los demás.
+        static void ImportarXml(GenteFitContext context)
+        {
+            string carpeta = Path.Combine(CarpetaXml(), "entrada");
+            Console.WriteLine($"Ficheros en {carpeta}:");
+            if (Directory.Exists(carpeta))
+                foreach (var f in Directory.GetFiles(carpeta, "*.xml").OrderBy(f => f))
+                    Console.WriteLine($"  - {Path.GetFileName(f)}");
+
+            Console.Write("Fichero a importar (Intro = clientes.xml): ");
+            string fichero = Console.ReadLine()?.Trim() ?? "";
+            if (fichero == "") fichero = "clientes.xml";
+            if (!fichero.EndsWith(".xml", StringComparison.OrdinalIgnoreCase)) fichero += ".xml";
+
+            XDocument doc = CargarXml(Path.Combine(carpeta, fichero));
+            if (doc.Root is null || doc.Root.Name != "clientes")
+                throw new GenteFitException("X-03", $"El fichero no tiene el formato esperado: la raíz es <{doc.Root?.Name}> y debería ser <clientes>.");
+
+            var repositorio = new RepositorioEF<Cliente>(context);
+            var descartados = new List<string>();
+            var dnisDelFichero = new HashSet<string>();
+            int total = 0, importados = 0;
+
+            foreach (var x in doc.Root.Elements("cliente"))
+            {
+                total++;
+                int linea = ((IXmlLineInfo)x).LineNumber;
+                string? dni = ((string?)x.Attribute("dni"))?.Trim().ToUpperInvariant();
+                string? nombre = ((string?)x.Element("nombre"))?.Trim();
+                string? apellidos = ((string?)x.Element("apellidos"))?.Trim();
+                string? email = ((string?)x.Element("email"))?.Trim();
+                string? telefono = ((string?)x.Element("telefono"))?.Trim();
+
+                // Se usan las mismas validaciones que en el alta
+                string? error = Comprobar("dni", dni, ValidarDni)
+                    ?? Comprobar("nombre", nombre, t => ValidarTexto(t, 60))
+                    ?? Comprobar("apellidos", apellidos, t => ValidarTexto(t, 100))
+                    ?? Comprobar("email", email, ValidarEmail)
+                    ?? Comprobar("telefono", telefono, ValidarTelefono, obligatorio: false);
+                if (error is null && !dnisDelFichero.Add(dni!))
+                    error = $"el DNI {dni} está repetido en el fichero.";
+                if (error is null && repositorio.Listar(c => c.Dni == dni).Count > 0)
+                    error = $"ya existe un cliente con el DNI {dni}.";
+
+                if (error is not null)
+                {
+                    descartados.Add($"Línea {linea}: {error}");
+                    continue;
+                }
+
+                try
+                {
+                    repositorio.Anyadir(new Cliente { Dni = dni!, Nombre = nombre!, Apellidos = apellidos!, Email = email!, Telefono = telefono });
+                    context.SaveChanges();
+                    importados++;
+                }
+                catch (GenteFitException ex)
+                {
+                    // Por ejemplo, un email que ya tiene otro cliente (E-04): se descarta solo este cliente
+                    context.ChangeTracker.Clear();
+                    descartados.Add($"Línea {linea}: [{ex.Codigo}] {ex.Message}");
+                }
+            }
+
+            MostrarExito($"Importados {importados} de {total} clientes desde {fichero}.");
+            foreach (var d in descartados)
+                MostrarError($"  Descartado. {d}");
+        }
+
+        // Abre el XML. Los errores que impiden leer el fichero entero se convierten en errores de GenteFit.
+        static XDocument CargarXml(string ruta)
+        {
+            try
+            {
+                // DtdProcessing.Prohibit: protege contra ataques XXE (entidades externas)
+                var ajustes = new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit };
+                using var lector = XmlReader.Create(ruta, ajustes);
+                return XDocument.Load(lector, LoadOptions.SetLineInfo);
+            }
+            catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
+            {
+                throw new GenteFitException("X-01", $"La fuente XML no está disponible: no existe el fichero {Path.GetFileName(ruta)}.");
+            }
+            catch (UnauthorizedAccessException)
+            {
+                throw new GenteFitException("X-01", $"La fuente XML no está disponible: no hay permiso para leer {Path.GetFileName(ruta)}.");
+            }
+            catch (IOException ex)
+            {
+                throw new GenteFitException("X-01", $"La fuente XML no está disponible: {ex.Message}");
+            }
+            catch (XmlException ex)
+            {
+                throw new GenteFitException("X-02", $"El XML está mal formado (línea {ex.LineNumber}, posición {ex.LinePosition}): {ex.Message}");
+            }
+        }
+
+        // Comprueba un campo leído del XML; devuelve el error o null si es correcto
+        static string? Comprobar(string campo, string? valor, Func<string, string?> validar, bool obligatorio = true)
+        {
+            if (string.IsNullOrEmpty(valor))
+                return obligatorio ? $"falta el campo {campo}." : null;
+            string? error = validar(valor);
+            return error is null ? null : $"{campo} incorrecto. {error}";
+        }
+
+        // Busca la carpeta xml del repositorio subiendo desde la carpeta del programa (bin/Debug/net10.0),
+        // para que funcione igual con dotnet run, con Visual Studio o desde cualquier carpeta
+        static string CarpetaXml()
+        {
+            var carpeta = new DirectoryInfo(AppContext.BaseDirectory);
+            while (carpeta != null && !Directory.Exists(Path.Combine(carpeta.FullName, "xml")))
+                carpeta = carpeta.Parent;
+            return Path.Combine(carpeta?.FullName ?? AppContext.BaseDirectory, "xml");
         }
 
         // Guarda a propósito datos incorrectos sin validarlos, para enseñar cómo reacciona la base de datos.
@@ -235,6 +359,8 @@ namespace GenteFit.Demo
             {
                 Console.Write($"{etiqueta}{pista}: ");
                 string? valor = Console.ReadLine()?.Trim();
+                if (valor == "0")
+                    throw new OperationCanceledException();
 
                 if (string.IsNullOrEmpty(valor))
                 {

@@ -480,3 +480,6 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Ficheros XML exportados por la demo (cada uno tiene los suyos)
+xml/salida/
