@@ -35,7 +35,7 @@ namespace GenteFit.Demo
                         case "5": ExportarXml(context); break;
                         case "6": ImportarXml(context); break;
                         case "0": return;
-                        default: Console.WriteLine("Opción no válida."); break;
+                        default: MostrarError("Opción no válida."); break;
                     }
                 }
                 catch ( GenteFitException ex)
@@ -49,35 +49,33 @@ namespace GenteFit.Demo
                     // Cualquier otro error inesperado: tamppoco cierra el programa
                     MostrarError($"[ERROR] {ex.Message}");
                     context.ChangeTracker.Clear(); // Descartar cambios pendientes
-                    Console.WriteLine($"Error: {ex.Message}");
                 }
             }
         }
 
         static void Alta(GenteFitContext context)
         {
-            Console.Write("Nombre: ");
-            var nombre = Console.ReadLine();
-            Console.Write("Email: ");
-            var email = Console.ReadLine();
-
-            if (string.IsNullOrWhiteSpace(nombre) || string.IsNullOrWhiteSpace(email))
+            var cliente = new Cliente
             {
-                Console.WriteLine("Error: nombre y email son obligatorios.");
-                return;
-            }
+                Dni = Leer("DNI")!,
+                Nombre = Leer("Nombre")!,
+                Apellidos = Leer("Apellidos")!,
+                Email = Leer("Email")!,
+                Telefono = Leer("Teléfono"),
+            };
 
-            context.Clientes.Add(new Cliente { Nombre = nombre, Email = email });
+            var repositorio = new RepositorioEF<Cliente>(context);
+            repositorio.Anyadir(cliente);
             context.SaveChanges();
-            Console.WriteLine("Cliente añadido.");
+            MostrarExito($"Cliente añadido con id {cliente.Id}.");
         }
 
         static void Baja(GenteFitContext context)
         {
             Console.Write("Id del cliente a eliminar: ");
-            if (!int.TryParse(Console.ReadLine(), out var id)) { Console.WriteLine("Id no válido."); return; }
+            if (!int.TryParse(Console.ReadLine(), out var id)) { MostrarError("El id tiene que ser un número."); return; }
             var cliente = context.Clientes.Find(id);
-            if (cliente == null) { Console.WriteLine("No existe."); return; }
+            if (cliente == null) { MostrarError($"No existe ningún cliente con id {id}."); return; }
             context.Clientes.Remove(cliente);
             context.SaveChanges();
             Console.WriteLine("Cliente eliminado.");
@@ -86,7 +84,7 @@ namespace GenteFit.Demo
         static void Consulta(GenteFitContext context)
         {
             var clientes = context.Clientes.ToList();
-            if (clientes.Count == 0) { Console.WriteLine("No hay clientes."); return; }
+            if (clientes.Count == 0) { MostrarError("No hay clientes."); return; }
             foreach (var c in clientes)
                 Console.WriteLine($"{c.Id} - {c.Nombre} - {c.Email}");
         }
@@ -94,9 +92,9 @@ namespace GenteFit.Demo
         static void Modificacion(GenteFitContext context)
         {
             Console.Write("Id del cliente a modificar: ");
-            if (!int.TryParse(Console.ReadLine(), out var id)) { Console.WriteLine("Id no válido."); return; }
+            if (!int.TryParse(Console.ReadLine(), out var id)) { MostrarError("El id tiene que ser un número."); return; }
             var cliente = context.Clientes.Find(id);
-            if (cliente == null) { Console.WriteLine("No existe."); return; }
+            if (cliente == null) { MostrarError($"No existe ningún cliente con id {id}."); return; }
             Console.Write($"Nuevo nombre ({cliente.Nombre}): ");
             var nombre = Console.ReadLine();
             Console.Write($"Nuevo email ({cliente.Email}): ");
@@ -104,7 +102,7 @@ namespace GenteFit.Demo
             if (!string.IsNullOrWhiteSpace(nombre)) cliente.Nombre = nombre;
             if (!string.IsNullOrWhiteSpace(email)) cliente.Email = email;
             context.SaveChanges();
-            Console.WriteLine("Cliente modificado.");
+            MostrarExito("Cliente {cliente.Nombre} con {cliente.Id} modificado.");
         }
 
         static void ExportarXml(GenteFitContext context)
@@ -118,12 +116,12 @@ namespace GenteFit.Demo
                             new XElement("Nombre", c.Nombre),
                             new XElement("Email", c.Email)))));
             doc.Save("clientes.xml");
-            Console.WriteLine("Exportado a clientes.xml");
+            MostrarExito("Exportado a clientes.xml");
         }
 
         static void ImportarXml(GenteFitContext context)
         {
-            if (!File.Exists("clientes.xml")) { Console.WriteLine("No existe clientes.xml"); return; }
+            if (!File.Exists("clientes.xml")) { MostrarError("No se encuentra el archivo clientes.xml"); return; }
 
             try
             {
@@ -136,18 +134,33 @@ namespace GenteFit.Demo
                         context.Clientes.Add(new Cliente { Nombre = nombre, Email = email });
                 }
                 context.SaveChanges();
-                Console.WriteLine("Importado desde clientes.xml");
+                MostrarExito("Importado desde clientes.xml");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error al importar el XML: {ex.Message}");
+                MostrarError($"Error al importar el XML: {ex.Message}");
             }
+        }
+
+        static string? Leer(string etiqueta)
+        {
+            Console.Write($"{etiqueta}: ");
+            var texto = Console.ReadLine()?.Trim();
+            return string.IsNullOrEmpty(texto) ? null : texto;
         }
 
         // Nueva funcion para mostrar errores en rojo, para que se vea mejor en la consola
         static void MostrarError(string mensaje)
         {
             Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine(mensaje);
+            Console.ResetColor();
+        }
+
+        // Nueva funcion para mostrar mensajes en verde, para que se vea mejor en la consola
+        static void MostrarExito(String mensaje)
+        {
+            Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine(mensaje);
             Console.ResetColor();
         }
