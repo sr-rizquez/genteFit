@@ -359,7 +359,7 @@ En este producto se ha utilizado IA generativa como herramienta de apoyo para la
 - [x] Añadir `xml/salida/` al `.gitignore`.
 - [x] Preparar los ficheros de prueba: uno correcto con acentos y apóstrofes, uno mal formado, uno con una codificación incorrecta y uno con datos erróneos.
 - [x] Demostrar la tolerancia a errores: fuente no disponible, XML mal formado y caracteres especiales.
-- [ ] Decidir qué hacer con `xml/clientes.xml`, que ahora está vacío.
+- [x] Decidir qué hacer con `xml/clientes.xml`, que ahora está vacío. Ya lo he  borrado, @Robert, tendras conflicto porqué era un archivo tuyo local, pero estaba vacío.
 
 ### Documentación y entrega
 
