@@ -24,6 +24,8 @@ public static class TraductorErroresSql
                 => new DatosDuplicadosException("Ya existe un registro con ese DNI, email o nombre.", original),
             515
                 => new BaseDatosException("E-04", $"Falta un dato obligatorio: {Columna(m)}.", original),
+            2628 or 8152
+                => new BaseDatosException("BD-05", $"El valor es demasiado largo para el campo {Columna(m)}.", original),
             547 when Contiene("DELETE") && Contiene("actividad")
                 => new ActividadConSesionesException("No se puede eliminar una actividad con sesiones.", original),
             547 when Contiene("DELETE")
@@ -35,14 +37,14 @@ public static class TraductorErroresSql
             _ when sql.Class >= 20 || ErroresConexion.Contains(sql.Number)
                 => new BaseDatosException("BD-01", $"La base de datos no está disponible (error SQL {sql.Number}).", original),
             _
-                => new BaseDatosException("BD-99", $"Error inesperado de la base de datos (error SQL {sql.Number}).", original)
+                => new BaseDatosException("BD-99", $"Error inesperado de la base de datos (error SQL {sql.Number}): {m}", original)
         };
     }
 
-    // Saca el nombre de la columna del mensaje de SQL Server: "...column 'apellidos'..."
+    // Saca el nombre de la columna del mensaje de SQL Server: "...column 'dni'..." o "...columna 'dni'..."
     private static string Columna(string mensaje)
     {
-        var coincidencia = Regex.Match(mensaje, "'([^']+)'");
+        var coincidencia = Regex.Match(mensaje, "column[a]? '([^']+)'", RegexOptions.IgnoreCase);
         return coincidencia.Success ? coincidencia.Groups[1].Value : "desconocido";
     }
 }
