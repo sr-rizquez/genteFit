@@ -10,20 +10,12 @@ namespace GenteFit.Demo
     {
         static void Main(string[] args)
         {
+            Console.OutputEncoding = System.Text.Encoding.UTF8;
             using var context = new GenteFitContext();
 
             while (true)
             {
-                Console.WriteLine("\n--- GENTEFIT ---");
-                Console.WriteLine("1. Alta de cliente");
-                Console.WriteLine("2. Baja de cliente");
-                Console.WriteLine("3. Consulta de clientes");
-                Console.WriteLine("4. Modificación de cliente");
-                Console.WriteLine("5. Exportar a XML");
-                Console.WriteLine("6. Importar desde XML");
-                Console.WriteLine("7. Probar errores de la base de datos");
-                Console.WriteLine("0. Salir");
-                Console.Write("Opción: ");
+                MostrarMenu();
                 var opcion = Console.ReadLine();
 
                 // He agregado un bloque try-catch para capturar errores de GenteFit y otros errores inesperados, para que no se cierre el programa
@@ -56,10 +48,13 @@ namespace GenteFit.Demo
                 }
                 catch (Exception ex)
                 {
-                    // Cualquier otro error inesperado: tamppoco cierra el programa
+                    // Cualquier otro error inesperado: tampoco cierra el programa
                     MostrarError($"[ERROR] {ex.Message}");
                     context.ChangeTracker.Clear(); // Descartar cambios pendientes
                 }
+
+                Console.Write("\nPulsa Intro para volver al menú...");
+                Console.ReadLine();
             }
         }
 
@@ -426,6 +421,44 @@ namespace GenteFit.Demo
         {
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine(mensaje);
+            Console.ResetColor();
+        }
+
+        // Dibuja el menú: limpia la pantalla, el título en un recuadro y las opciones agrupadas por secciones
+        static void MostrarMenu()
+        {
+            const int ancho = 42;
+            string titulo = "GENTEFIT · Gestión de clientes";
+            int izquierda = (ancho - titulo.Length) / 2;
+
+            Console.Clear();
+            Escribir("╔" + new string('═', ancho) + "╗", ConsoleColor.Cyan);
+            Escribir("║" + new string(' ', izquierda) + titulo.PadRight(ancho - izquierda) + "║", ConsoleColor.Cyan);
+            Escribir("╚" + new string('═', ancho) + "╝", ConsoleColor.Cyan);
+            Console.WriteLine();
+            Escribir(" CLIENTES", ConsoleColor.Yellow);
+            Console.WriteLine("   1. Alta de cliente");
+            Console.WriteLine("   2. Baja de cliente");
+            Console.WriteLine("   3. Consulta de clientes");
+            Console.WriteLine("   4. Modificación de cliente");
+            Console.WriteLine();
+            Escribir(" INTERCAMBIO XML", ConsoleColor.Yellow);
+            Console.WriteLine("   5. Exportar clientes a XML");
+            Console.WriteLine("   6. Importar clientes desde XML");
+            Console.WriteLine();
+            Escribir(" PRUEBAS", ConsoleColor.Yellow);
+            Console.WriteLine("   7. Probar errores de la base de datos");
+            Console.WriteLine();
+            Console.WriteLine("   0. Salir");
+            Console.WriteLine();
+            Console.Write("Elige una opción: ");
+        }
+
+        // Escribe una línea en el color indicado y vuelve al color normal
+        static void Escribir(string texto, ConsoleColor color)
+        {
+            Console.ForegroundColor = color;
+            Console.WriteLine(texto);
             Console.ResetColor();
         }
     }
