@@ -38,7 +38,7 @@ namespace GenteFit.Demo
                         default: MostrarError("Opción no válida."); break;
                     }
                 }
-                catch ( GenteFitException ex)
+                catch (GenteFitException ex)
                 {
                     // Error de GenteFit: se muestra con su código y el programa
                     MostrarError($"[{ex.Codigo}] {ex.Message}");
@@ -70,39 +70,70 @@ namespace GenteFit.Demo
             MostrarExito($"Cliente añadido con id {cliente.Id}.");
         }
 
+
+        /*
+             Aquí he cambiado toda la función de baja. Explico: El cliente no se elimina, se da de baja, por lo tanto se queda en la tabla con el campo de fecha de baja.
+             Qué hace?: Pone FechaBaja = hoy y Activo = false, UPDATE (la fila se queda, no se elimina).
+             Regla error, la E-03 del doc Producto 1; No deja dar de baja a un cliente con reservas activas.
+        */
         static void Baja(GenteFitContext context)
         {
-            Console.Write("Id del cliente a eliminar: ");
+            Console.Write("Id del cliente a dar de baja: ");
             if (!int.TryParse(Console.ReadLine(), out var id)) { MostrarError("El id tiene que ser un número."); return; }
-            var cliente = context.Clientes.Find(id);
+
+            var repositorio = new RepositorioEF<Cliente>(context);
+            var cliente = repositorio.ObtenerPorId(id);
             if (cliente == null) { MostrarError($"No existe ningún cliente con id {id}."); return; }
-            context.Clientes.Remove(cliente);
+            if (!cliente.Activo) { MostrarError($"El cliente con id {id} ya está dado de baja."); return; }
+
+            // E-03: No deja dar de baja a un cliente con reservas activas.
+            bool tieneReservasActivas = context.Reservas.Any(r => r.IdCliente == id && r.Estado != EstadoReserva.CANCELADA);
+            if (tieneReservasActivas)
+                throw new ClienteConReservasException($"No se puede dar de baja: el cliente {cliente.Nombre} con id {id} tiene reservas activas.");
+
+            // Baja lógica: el cliente no se borra, se marca con la fecha de baja y activo = false
+            cliente.FechaBaja = DateTime.Today;
+            cliente.Activo = false;
+            repositorio.Actualizar(cliente);
             context.SaveChanges();
-            Console.WriteLine("Cliente eliminado.");
+            MostrarExito($"Cliente {cliente.Nombre} {cliente.Apellidos} dado de baja el {cliente.FechaBaja:dd/MM/yyyy}.");
         }
 
         static void Consulta(GenteFitContext context)
         {
-            var clientes = context.Clientes.ToList();
-            if (clientes.Count == 0) { MostrarError("No hay clientes."); return; }
+            var repositorio = new RepositorioEF<Cliente>(context);
+            var clientes = repositorio.Listar();
+            if (clientes.Count == 0) { Console.WriteLine("No hay clientes."); return; }
+
             foreach (var c in clientes)
-                Console.WriteLine($"{c.Id} - {c.Nombre} - {c.Email}");
+            {
+                string estado = c.Activo ? "activo" : $"de baja desde {c.FechaBaja:dd/MM/yyyy}";
+                Console.WriteLine($"{c.Id} - {c.Dni} - {c.Nombre} {c.Apellidos} - {c.Email} - {estado}");
+            }
+
+            int activos = repositorio.Listar(c => c.Activo).Count;
+            Console.WriteLine($"Clientes activos: {activos} de {clientes.Count}.");
         }
 
         static void Modificacion(GenteFitContext context)
         {
             Console.Write("Id del cliente a modificar: ");
             if (!int.TryParse(Console.ReadLine(), out var id)) { MostrarError("El id tiene que ser un número."); return; }
-            var cliente = context.Clientes.Find(id);
+
+            var repositorio = new RepositorioEF<Cliente>(context);
+            var cliente = repositorio.ObtenerPorId(id);
             if (cliente == null) { MostrarError($"No existe ningún cliente con id {id}."); return; }
-            Console.Write($"Nuevo nombre ({cliente.Nombre}): ");
-            var nombre = Console.ReadLine();
-            Console.Write($"Nuevo email ({cliente.Email}): ");
-            var email = Console.ReadLine();
-            if (!string.IsNullOrWhiteSpace(nombre)) cliente.Nombre = nombre;
-            if (!string.IsNullOrWhiteSpace(email)) cliente.Email = email;
+
+            Console.WriteLine("Deja un campo vacío para no cambiarlo.");
+            cliente.Dni = Leer($"DNI ({cliente.Dni})") ?? cliente.Dni;
+            cliente.Nombre = Leer($"Nombre ({cliente.Nombre})") ?? cliente.Nombre;
+            cliente.Apellidos = Leer($"Apellidos ({cliente.Apellidos})") ?? cliente.Apellidos;
+            cliente.Email = Leer($"Email ({cliente.Email})") ?? cliente.Email;
+            cliente.Telefono = Leer($"Teléfono ({cliente.Telefono})") ?? cliente.Telefono;
+
+            repositorio.Actualizar(cliente);
             context.SaveChanges();
-            MostrarExito("Cliente {cliente.Nombre} con {cliente.Id} modificado.");
+            MostrarExito($"Cliente {cliente.Nombre} {cliente.Apellidos} (id {cliente.Id}) modificado.");
         }
 
         static void ExportarXml(GenteFitContext context)
