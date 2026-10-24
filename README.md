@@ -184,11 +184,13 @@ Si SQL Server rechaza una operación, lanza una `SqlException` con un mensaje t�
 | 2601 / 2627 en el índice de sesión | `SolapamientoSesionException` | E-05 |
 | 2601 / 2627 en el índice de reserva | `ReservaDuplicadaException` | E-01 |
 | 2601 / 2627 en cualquier otro índice único | `DatosDuplicadosException` | E-04 |
+| 515: falta un dato obligatorio (columna `NOT NULL`) | `BaseDatosException` | E-04 |
 | 547 al borrar una actividad con sesiones | `ActividadConSesionesException` | E-06 |
 | 547 al borrar otro registro con dependencias | `BaseDatosException` | BD-02 |
 | 547 por una restricción CHECK | `BaseDatosException` | BD-03 |
 | 547 por una clave foránea inexistente | `BaseDatosException` | BD-04 |
-| Cualquier otro (por ejemplo, el servidor apagado) | `BaseDatosException` | BD-01 |
+| Errores de conexión (servidor apagado o inaccesible, tiempo agotado, login incorrecto) | `BaseDatosException` | BD-01 |
+| Cualquier otro | `BaseDatosException` | BD-99 |
 
 Todas heredan de `GenteFitException`, que tiene la propiedad `Codigo`, así que basta con un `catch (GenteFitException ex)` para atraparlas. El error original queda guardado en `InnerException`. `RepositorioEF<T>` también traduce los errores que saltan al consultar, por ejemplo si la base de datos no está disponible.
 
