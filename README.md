@@ -110,6 +110,7 @@ Y luego repite el paso 3.
 1. Pulsa Ctrl+F5 (ejecutar sin depurar).
 2. Se abrirá una ventana de consola con el menú:
 
+```
 --- GENTEFIT ---
 1. Alta de cliente
 2. Baja de cliente
@@ -117,14 +118,23 @@ Y luego repite el paso 3.
 4. Modificación de cliente
 5. Exportar a XML
 6. Importar desde XML
+7. Probar errores de la base de datos
 0. Salir
 Opción:
+```
 
-3. Prueba cada opción:
-   - 1: escribe un nombre y email. Debería decir "Cliente añadido".
-   - 3: debería listar el cliente que acabas de crear.
-   - 5: genera un archivo clientes.xml en la carpeta de ejecución.
-   - 6: importa los clientes de ese XML.
+3. Prueba cada opción (los errores salen en rojo y los mensajes correctos en verde; ningún error cierra el programa):
+   - 1: alta de cliente. Los campos con * son obligatorios. Cada campo se valida al escribirlo (DNI con la letra correcta, nombre y apellidos solo con letras, email con @, teléfono solo con números) y se vuelve a pedir si está mal. Escribe 0 para cancelar.
+   - 2: baja lógica: el cliente no se borra, se le pone la fecha de baja y queda inactivo. No deja dar de baja a un cliente con reservas activas (E-03).
+   - 3: lista los clientes con su estado (activo o de baja) y cuántos están activos.
+   - 4: modifica cualquier campo de un cliente. Dejar un campo vacío lo conserva.
+   - 5: exporta todos los clientes a `xml/salida/clientes.xml`.
+   - 6: importa clientes de un fichero de `xml/entrada/`.
+   - 7: intenta guardar datos incorrectos sin validarlos, para ver cómo reacciona la base de datos. No se guarda nada.
+
+Para probar el error de base de datos no disponible, apaga SQL Server (en macOS, `docker stop gentefit-sql`) y usa la opción 3: sale `[BD-01]` y el programa sigue funcionando.
+
+Para probar los DNI hay que usar uno con la letra correcta, por ejemplo 12345678Z, 11111111H o 22222222J.
 
 ## Capa de persistencia (GenteFit.Datos)
 
@@ -256,18 +266,65 @@ dotnet ef migrations script --project GenteFit.Datos -o ../docs/GenteFitDB.sql
 
 La base de datos no se sube al repositorio. Lo que se comparte es el código y las migraciones, y cada uno crea su propia base de datos con ellas.
 
-### Cambios que necesita la demo
+### Cómo he adaptado la demo
 
-Con el modelo nuevo, la demo compila, pero hay que adaptarla:
+- Cada opción del menú está dentro de un `try` / `catch (GenteFitException)` que muestra el código y el mensaje en rojo y vacía el `ChangeTracker`, para que un guardado fallido no afecte a la siguiente operación.
+- Todas las opciones usan `RepositorioEF<Cliente>` en lugar de acceder directamente al contexto, así los errores de conexión también salen traducidos.
+- El alta y la modificación validan cada campo antes de guardarlo. El DNI o el email repetidos no se pueden comprobar al escribir, así que los rechaza la base de datos (E-04): el programa valida el formato y la base de datos garantiza que no se repitan.
+- La opción 7 guarda a propósito datos sin validar para enseñar la reacción de la base de datos: dato obligatorio vacío (E-04), valor demasiado largo (BD-05), DNI repetido (E-04), clave foránea inexistente (BD-04), restricción CHECK (BD-03) y borrar una actividad con sesiones (E-06).
 
-1. El alta de cliente tiene que pedir también DNI y apellidos, que ahora son obligatorios.
-2. La baja tiene que ser lógica (`FechaBaja = DateTime.Today` y `Activo = false`), no un `Remove`.
-3. Cada opción del menú debería capturar `GenteFitException` y mostrar `[{ex.Codigo}] {ex.Message}`, para que se vea la reacción a errores sin que el programa se cierre.
+## Intercambio XML
+
+He usado LINQ to XML (`XDocument`), que viene incluido en .NET. Los ficheros están en la carpeta `xml` del repositorio, que el programa busca subiendo desde su carpeta de ejecución, así que funciona igual con `dotnet run` y con Visual Studio:
+
+```
+xml/
+  entrada/                       Ficheros de prueba para importar (se suben al repositorio)
+    clientes.xml                   3 clientes correctos, con acentos, ñ, ç y apóstrofes
+    clientes_datos_erroneos.xml    8 clientes: 1 correcto y 7 con un error distinto cada uno
+    clientes_mal_formado.xml       Un & sin escapar y una etiqueta sin cerrar
+    clientes_codificacion.xml      Guardado en ISO-8859-1 pero declara UTF-8
+  salida/                        Lo que genera la exportación (excluido en .gitignore)
+    clientes.xml
+```
+
+### Exportación
+
+Escribe todos los clientes en `xml/salida/clientes.xml`, en UTF-8, con el DNI como atributo y el resto de datos como elementos. Los campos vacíos (teléfono, fecha de baja) no se escriben. `XDocument` escapa automáticamente los caracteres especiales de XML (`&`, `<`, `>`), y los acentos y apóstrofes se guardan tal cual.
+
+### Importación
+
+Distingue dos niveles de error:
+
+- **Errores que impiden leer el fichero:** no se importa nada y se muestra el error.
+- **Errores en un cliente concreto:** se descarta ese cliente, indicando su línea en el fichero y el motivo, y se importan los demás. Cada cliente se guarda por separado, así que uno incorrecto no impide guardar el resto.
+
+Cada cliente se valida con las mismas reglas que el alta. La importación solo añade clientes nuevos: si un DNI ya existe en la base de datos o está repetido en el fichero, el cliente se descarta y los datos que ya había no se modifican. Por eso importar el mismo fichero dos veces no duplica nada.
+
+El fichero se abre con `DtdProcessing.Prohibit` para evitar ataques XXE, y con `LoadOptions.SetLineInfo` para poder indicar la línea de cada error.
+
+| Error | Código |
+|---|---|
+| El fichero no existe, no hay permiso para leerlo o no se puede abrir | X-01 |
+| El XML está mal formado o tiene una codificación incorrecta (indica línea y posición) | X-02 |
+| La raíz del fichero no es `<clientes>` | X-03 |
+| No se puede escribir el fichero exportado | X-04 |
+
+Resultado de los ficheros de prueba:
+
+| Fichero | Resultado |
+|---|---|
+| `clientes.xml` | Importados 3 de 3 |
+| `clientes_datos_erroneos.xml` | Importado 1 de 8; se descartan la letra del DNI incorrecta, el nombre con números, el email que falta, el email sin @, el teléfono con letras, el DNI que falta y el DNI repetido |
+| `clientes_mal_formado.xml` | X-02 en la línea 5 |
+| `clientes_codificacion.xml` | X-02: carácter no válido en la codificación |
+| `no_existe.xml` | X-01 |
+| `clientes.xml` por segunda vez | Importados 0 de 3: ya existen |
 
 ## Notas
 
 - La base de datos se crea sola con el Paso 4. No hace falta instalar SQL Server Management Studio ni crear tablas a mano.
-- El archivo clientes.xml se genera en GenteFit.Demo\bin\Debug\net10.0\ (o la versión de .NET que uses) cuando se usa la opción 5. La opción 6 lo lee desde ahí.
+- La opción 5 genera `xml/salida/clientes.xml` y la opción 6 lee de `xml/entrada/`, se ejecute el programa desde donde se ejecute (ver «Intercambio XML»).
 - Si Visual Studio muestra warnings sobre vulnerabilidades en paquetes NuGet, son advertencias, no errores. No impiden que el proyecto funcione.
 - Si algo falla, lo primero es comprobar que LocalDB responde (sqllocaldb info) y que los paquetes NuGet se restauraron correctamente.
 
@@ -289,19 +346,19 @@ En este producto se ha utilizado IA generativa como herramienta de apoyo para la
 
 ### Demo
 
-- [ ] Pedir también DNI y apellidos en el alta de cliente.
-- [ ] Cambiar la baja de cliente por una baja lógica (`FechaBaja` y `Activo = false`) en lugar de `Remove`.
-- [ ] Capturar `GenteFitException` en cada opción del menú y mostrar el código y el mensaje del error.
-- [ ] Añadir opciones que demuestren los errores de la base de datos: DNI duplicado, clave foránea inexistente, borrar una actividad con sesiones y base de datos no disponible.
-- [ ] Actualizar en este README el menú de la demo y la ruta de los ficheros XML.
+- [x] Pedir también DNI y apellidos en el alta de cliente.
+- [x] Cambiar la baja de cliente por una baja lógica (`FechaBaja` y `Activo = false`) en lugar de `Remove`.
+- [x] Capturar `GenteFitException` en cada opción del menú y mostrar el código y el mensaje del error.
+- [x] Añadir opciones que demuestren los errores de la base de datos: DNI duplicado, clave foránea inexistente, borrar una actividad con sesiones y base de datos no disponible.
+- [x] Actualizar en este README el menú de la demo y la ruta de los ficheros XML.
 
 ### XML
 
-- [ ] Crear las carpetas `xml/entrada/` (ficheros de prueba para importar) y `xml/salida/` (ficheros exportados).
-- [ ] Usar rutas fijas para importar y exportar, que no dependan de la carpeta desde la que se ejecuta el programa.
-- [ ] Añadir `xml/salida/` al `.gitignore`.
-- [ ] Preparar los ficheros de prueba: uno correcto con acentos y apóstrofes, uno mal formado, uno con una codificación incorrecta y uno con datos erróneos.
-- [ ] Demostrar la tolerancia a errores: fuente no disponible, XML mal formado y caracteres especiales.
+- [x] Crear las carpetas `xml/entrada/` (ficheros de prueba para importar) y `xml/salida/` (ficheros exportados).
+- [x] Usar rutas fijas para importar y exportar, que no dependan de la carpeta desde la que se ejecuta el programa.
+- [x] Añadir `xml/salida/` al `.gitignore`.
+- [x] Preparar los ficheros de prueba: uno correcto con acentos y apóstrofes, uno mal formado, uno con una codificación incorrecta y uno con datos erróneos.
+- [x] Demostrar la tolerancia a errores: fuente no disponible, XML mal formado y caracteres especiales.
 - [ ] Decidir qué hacer con `xml/clientes.xml`, que ahora está vacío.
 
 ### Documentación y entrega
