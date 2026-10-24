@@ -1,5 +1,6 @@
 ﻿using GenteFit.Datos;
 using Microsoft.EntityFrameworkCore;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
 namespace GenteFit.Demo
@@ -19,6 +20,7 @@ namespace GenteFit.Demo
                 Console.WriteLine("4. Modificación de cliente");
                 Console.WriteLine("5. Exportar a XML");
                 Console.WriteLine("6. Importar desde XML");
+                Console.WriteLine("7. Probar errores de la base de datos");
                 Console.WriteLine("0. Salir");
                 Console.Write("Opción: ");
                 var opcion = Console.ReadLine();
@@ -34,6 +36,7 @@ namespace GenteFit.Demo
                         case "4": Modificacion(context); break;
                         case "5": ExportarXml(context); break;
                         case "6": ImportarXml(context); break;
+                        case "7": ProbarErroresBaseDatos(context); break;
                         case "0": return;
                         default: MostrarError("Opción no válida."); break;
                     }
@@ -53,15 +56,18 @@ namespace GenteFit.Demo
             }
         }
 
+        // Cada campo se valida al escribirlo: si está mal, se explica el error y se vuelve a pedir.
+        // El DNI o el email repetidos no se pueden comprobar aquí: los rechaza la base de datos (E-04).
         static void Alta(GenteFitContext context)
         {
+            Console.WriteLine("Los campos marcados con * son obligatorios.");
             var cliente = new Cliente
             {
-                Dni = Leer("DNI")!,
-                Nombre = Leer("Nombre")!,
-                Apellidos = Leer("Apellidos")!,
-                Email = Leer("Email")!,
-                Telefono = Leer("Teléfono"),
+                Dni = Pedir("DNI", true, ValidarDni)!.ToUpperInvariant(),
+                Nombre = Pedir("Nombre", true, t => ValidarTexto(t, 60))!,
+                Apellidos = Pedir("Apellidos", true, t => ValidarTexto(t, 100))!,
+                Email = Pedir("Email", true, ValidarEmail)!,
+                Telefono = Pedir("Teléfono", false, ValidarTelefono)
             };
 
             var repositorio = new RepositorioEF<Cliente>(context);
@@ -108,7 +114,7 @@ namespace GenteFit.Demo
             foreach (var c in clientes)
             {
                 string estado = c.Activo ? "activo" : $"de baja desde {c.FechaBaja:dd/MM/yyyy}";
-                Console.WriteLine($"{c.Id} - {c.Dni} - {c.Nombre} {c.Apellidos} - {c.Email} - {estado}");
+                Console.WriteLine($"{c.Id} - {c.Dni} - {c.Nombre} {c.Apellidos} - {c.Telefono} - {c.Email} - {estado}");
             }
 
             int activos = repositorio.Listar(c => c.Activo).Count;
@@ -125,11 +131,11 @@ namespace GenteFit.Demo
             if (cliente == null) { MostrarError($"No existe ningún cliente con id {id}."); return; }
 
             Console.WriteLine("Deja un campo vacío para no cambiarlo.");
-            cliente.Dni = Leer($"DNI ({cliente.Dni})") ?? cliente.Dni;
-            cliente.Nombre = Leer($"Nombre ({cliente.Nombre})") ?? cliente.Nombre;
-            cliente.Apellidos = Leer($"Apellidos ({cliente.Apellidos})") ?? cliente.Apellidos;
-            cliente.Email = Leer($"Email ({cliente.Email})") ?? cliente.Email;
-            cliente.Telefono = Leer($"Teléfono ({cliente.Telefono})") ?? cliente.Telefono;
+            cliente.Dni = Pedir("DNI", true, ValidarDni, cliente.Dni)!.ToUpperInvariant();
+            cliente.Nombre = Pedir("Nombre", true, t => ValidarTexto(t, 60), cliente.Nombre)!;
+            cliente.Apellidos = Pedir("Apellidos", true, t => ValidarTexto(t, 100), cliente.Apellidos)!;
+            cliente.Email = Pedir("Email", true, ValidarEmail, cliente.Email)!;
+            cliente.Telefono = Pedir("Teléfono", false, ValidarTelefono, cliente.Telefono);
 
             repositorio.Actualizar(cliente);
             context.SaveChanges();
@@ -173,11 +179,112 @@ namespace GenteFit.Demo
             }
         }
 
-        static string? Leer(string etiqueta)
+        // Guarda a propósito datos incorrectos sin validarlos, para enseñar cómo reacciona la base de datos.
+        // Ningún dato se queda guardado: todas las pruebas fallan y se descartan.
+        static void ProbarErroresBaseDatos(GenteFitContext context)
         {
-            Console.Write($"{etiqueta}: ");
-            var texto = Console.ReadLine()?.Trim();
-            return string.IsNullOrEmpty(texto) ? null : texto;
+            Console.WriteLine("Se intenta guardar cada dato incorrecto directamente en la base de datos:");
+
+            Probar(context, "Cliente sin apellidos (campo obligatorio)", () =>
+                context.Clientes.Add(new Cliente { Dni = "00000001R", Nombre = "Prueba", Apellidos = null!, Email = "prueba1@gentefit.test" }));
+
+            Probar(context, "DNI de más de 9 caracteres", () =>
+                context.Clientes.Add(new Cliente { Dni = "1234567890123", Nombre = "Prueba", Apellidos = "Larga", Email = "prueba2@gentefit.test" }));
+
+            var existente = context.Clientes.AsNoTracking().FirstOrDefault();
+            if (existente != null)
+                Probar(context, $"DNI repetido ({existente.Dni})", () =>
+                    context.Clientes.Add(new Cliente { Dni = existente.Dni, Nombre = "Prueba", Apellidos = "Repetida", Email = "prueba3@gentefit.test" }));
+
+            Probar(context, "Reserva de una sesión que no existe (id 9999)", () =>
+                context.Reservas.Add(new Reserva { IdSesion = 9999, IdCliente = existente?.Id ?? 1, FechaSolicitud = DateTime.Now, Estado = EstadoReserva.CONFIRMADA }));
+
+            Probar(context, "Sala con aforo 0", () =>
+                context.Salas.Add(new Sala { Nombre = "Sala de prueba", Aforo = 0 }));
+
+            Probar(context, "Borrar una actividad que tiene sesiones", () =>
+                context.Actividades.Remove(context.Actividades.First(a => a.Sesiones.Any())));
+        }
+
+        // Ejecuta una prueba: si la base de datos la rechaza, muestra el error traducido
+        static void Probar(GenteFitContext context, string descripcion, Action preparar)
+        {
+            Console.Write($"- {descripcion}: ");
+            try
+            {
+                preparar();
+                context.SaveChanges();
+                MostrarExito("se ha guardado (no debería).");
+            }
+            catch (GenteFitException ex)
+            {
+                MostrarError($"[{ex.Codigo}] {ex.Message}");
+            }
+            finally
+            {
+                context.ChangeTracker.Clear();
+            }
+        }
+
+        // Pide un dato y lo repite hasta que sea válido.
+        // Si se pasa el valor actual (al modificar), dejarlo vacío conserva ese valor.
+        static string? Pedir(string etiqueta, bool obligatorio, Func<string, string?> validar, string? actual = null)
+        {
+            string pista = actual is not null ? $" ({actual})" : obligatorio ? " *" : " (opcional)";
+            while (true)
+            {
+                Console.Write($"{etiqueta}{pista}: ");
+                string? valor = Console.ReadLine()?.Trim();
+
+                if (string.IsNullOrEmpty(valor))
+                {
+                    if (actual is not null) return actual;
+                    if (!obligatorio) return null;
+                    MostrarError($"El campo {etiqueta} es obligatorio.");
+                    continue;
+                }
+
+                string? error = validar(valor);
+                if (error is null) return valor;
+                MostrarError(error);
+            }
+        }
+
+        // Las validaciones devuelven el mensaje de error, o null si el dato es correcto
+
+        static string? ValidarDni(string dni)
+        {
+            if (!Regex.IsMatch(dni, @"^\d{8}[A-Za-z]$"))
+                return "El DNI tiene que tener 8 números y una letra, por ejemplo 12345678Z.";
+            char letraCorrecta = "TRWAGMYFPDXBNJZSQVHLCKE"[int.Parse(dni[..8]) % 23];
+            if (char.ToUpperInvariant(dni[8]) != letraCorrecta)
+                return $"La letra del DNI no es correcta: para {dni[..8]} tiene que ser {letraCorrecta}.";
+            return null;
+        }
+
+        static string? ValidarTexto(string texto, int maximo)
+        {
+            if (texto.Length > maximo)
+                return $"No puede tener más de {maximo} caracteres.";
+            if (!Regex.IsMatch(texto, @"^\p{L}[\p{L} '’\-]*$"))
+                return "Introduce solo letras, sin números ni símbolos (se admiten espacios, apóstrofes y guiones).";
+            return null;
+        }
+
+        static string? ValidarEmail(string email)
+        {
+            if (email.Length > 150)
+                return "El email no puede tener más de 150 caracteres.";
+            if (!Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+                return "El email tiene que tener el formato nombre@dominio.com.";
+            return null;
+        }
+
+        static string? ValidarTelefono(string telefono)
+        {
+            if (telefono.Length > 15 || !Regex.IsMatch(telefono, @"^\+?[0-9 ]{9,}$"))
+                return "El teléfono solo puede tener números (y un + delante), entre 9 y 15 caracteres.";
+            return null;
         }
 
         // Nueva funcion para mostrar errores en rojo, para que se vea mejor en la consola
