@@ -23,16 +23,33 @@ namespace GenteFit.Demo
                 Console.Write("Opción: ");
                 var opcion = Console.ReadLine();
 
-                switch (opcion)
+                // He agregado un bloque try-catch para capturar errores de GenteFit y otros errores inesperados, para que no se cierre el programa
+                try
                 {
-                    case "1": Alta(context); break;
-                    case "2": Baja(context); break;
-                    case "3": Consulta(context); break;
-                    case "4": Modificacion(context); break;
-                    case "5": ExportarXml(context); break;
-                    case "6": ImportarXml(context); break;
-                    case "0": return;
-                    default: Console.WriteLine("Opción no válida."); break;
+                    switch (opcion)
+                    {
+                        case "1": Alta(context); break;
+                        case "2": Baja(context); break;
+                        case "3": Consulta(context); break;
+                        case "4": Modificacion(context); break;
+                        case "5": ExportarXml(context); break;
+                        case "6": ImportarXml(context); break;
+                        case "0": return;
+                        default: Console.WriteLine("Opción no válida."); break;
+                    }
+                }
+                catch ( GenteFitException ex)
+                {
+                    // Error de GenteFit: se muestra con su código y el programa
+                    MostrarError($"[{ex.Codigo}] {ex.Message}");
+                    context.ChangeTracker.Clear(); // Descartar cambios pendientes
+                }
+                catch (Exception ex)
+                {
+                    // Cualquier otro error inesperado: tamppoco cierra el programa
+                    MostrarError($"[ERROR] {ex.Message}");
+                    context.ChangeTracker.Clear(); // Descartar cambios pendientes
+                    Console.WriteLine($"Error: {ex.Message}");
                 }
             }
         }
@@ -125,6 +142,14 @@ namespace GenteFit.Demo
             {
                 Console.WriteLine($"Error al importar el XML: {ex.Message}");
             }
+        }
+
+        // Nueva funcion para mostrar errores en rojo, para que se vea mejor en la consola
+        static void MostrarError(string mensaje)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine(mensaje);
+            Console.ResetColor();
         }
     }
 }
