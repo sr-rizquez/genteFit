@@ -284,6 +284,7 @@ xml/
     clientes_datos_erroneos.xml    8 clientes: 1 correcto y 7 con un error distinto cada uno
     clientes_mal_formado.xml       Un & sin escapar y una etiqueta sin cerrar
     clientes_codificacion.xml      Guardado en ISO-8859-1 pero declara UTF-8
+    clientes_estructura_cambiada.xml  Elementos en otro orden y datos que GenteFit no conoce
   salida/                        Lo que genera la exportación (excluido en .gitignore)
     clientes.xml
 ```
@@ -318,6 +319,7 @@ Resultado de los ficheros de prueba:
 | `clientes_datos_erroneos.xml` | Importado 1 de 8; se descartan la letra del DNI incorrecta, el nombre con números, el email que falta, el email sin @, el teléfono con letras, el DNI que falta y el DNI repetido |
 | `clientes_mal_formado.xml` | X-02 en la línea 5 |
 | `clientes_codificacion.xml` | X-02: carácter no válido en la codificación |
+| `clientes_estructura_cambiada.xml` | Importados 2 de 2: se ignoran los elementos y atributos desconocidos y el orden no importa |
 | `no_existe.xml` | X-01 |
 | `clientes.xml` por segunda vez | Importados 0 de 3: ya existen |
 
