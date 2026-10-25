@@ -423,4 +423,4 @@ Resultado de los ficheros de prueba:
 
 ## Uso de inteligencia artificial
 
-En este producto se ha utilizado IA generativa como herramienta de apoyo para la revisión de código y la redacción de documentación. Todo el contenido generado ha sido revisado y validado por los integrantes del grupo.
+En este producto se ha utilizado IA generativa como herramienta de apoyo para la revisión de código.
