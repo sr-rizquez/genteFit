@@ -15,7 +15,7 @@ La capa de acceso a datos de GenteFit, con Entity Framework Core sobre SQL Serve
 - Alta, baja lógica, consulta y modificación de clientes contra la base de datos.
 - Exportación e importación de clientes en XML, con tolerancia a errores.
 - Una opción que provoca a propósito errores de la base de datos para ver cómo se tratan.
-- Los prototipos con los que comparamos cinco componentes XML.
+- Los prototipos con los que comparamos los componentes ORM y los cinco componentes XML.
 
 ## Estructura del repositorio
 
@@ -25,6 +25,8 @@ genteFit/
     GenteFit.Datos/       Entidades, configuración, errores, repositorio, DbContext y migraciones
     GenteFit.Demo/        Demo de consola (menú CRUD, XML y pruebas de errores) y la solución GenteFit.Demo.slnx
     GenteFit.Web/         Proyecto web MVC (reservado para el Producto 3)
+    GenteFit.PruebasOrm/  Alta de un cliente con EF Core, Dapper, ADO.NET y NHibernate, para comparar el código
+  prototipos/orm/         Comparativa de Entity Framework Core, Dapper, LINQ to DB y RepoDB
   prototipos/xml/         Comparativa de XmlDocument, LINQ to XML, XmlReader, XmlSerializer y DataSet
   xml/entrada/            Ficheros XML de prueba para importar
   docs/GenteFitDB.sql     Script SQL de la base de datos completa
@@ -231,12 +233,26 @@ Los errores salen en rojo y los mensajes correctos en verde. Ningún error cierr
 
 Para probar la base de datos no disponible, en macOS o Linux para SQL Server con `docker stop gentefit-sql` y usa la opción 3: sale `[BD-01]` y el programa sigue funcionando. Después, `docker start gentefit-sql`.
 
-### Prototipos XML
+### Prototipos
 
-Ejecutan los cinco componentes comparados con los mismos ficheros y guardan los resultados en `prototipos/xml/resultados.md`. No necesitan base de datos:
+Son los programas con los que comparamos los componentes. Cada uno guarda sus resultados en un `resultados.md` dentro de su carpeta.
+
+Los prototipos XML ejecutan los cinco componentes con los mismos ficheros. No necesitan base de datos:
 
 ```bash
 dotnet run --project prototipos/xml
+```
+
+Los prototipos ORM insertan, leen y buscan clientes con Entity Framework Core, Dapper, LINQ to DB y RepoDB. Usan la misma conexión que la demo, pero crean y borran su propia base de datos (`GenteFitPrototipoOrm`), así que no tocan `GenteFitDB`:
+
+```bash
+dotnet run --project prototipos/orm
+```
+
+GenteFit.PruebasOrm compara cuánto código pide dar de alta un cliente con Entity Framework Core, Dapper, ADO.NET y NHibernate. Trabaja sobre `GenteFitDB` (hay que haberla creado antes con la migración): cada prueba inserta un cliente llamado PruebaOrm y, al final, los borra todos. Pulsa Intro para cerrarlo:
+
+```bash
+dotnet run --project src/GenteFit.PruebasOrm
 ```
 
 ### Si algo falla
@@ -418,7 +434,7 @@ Resultado de los ficheros de prueba:
 ## Documentación adicional
 
 - Comparativa de ORM y componentes XML y justificación: PDF `producto2Justificacion(P59)` de la entrega.
-- Resultados de los prototipos XML: `prototipos/xml/resultados.md`.
+- Resultados de los prototipos: `prototipos/orm/resultados.md` y `prototipos/xml/resultados.md`.
 - Vídeo demostrativo: enlace en el documento `producto2VideoDemo(P59)` de la entrega.
 
 ## Uso de inteligencia artificial

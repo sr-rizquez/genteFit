@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Prototipos de los ORM comparados en el Producto 2.
+       No forma parte de la solución de GenteFit: solo sirve para probar y comparar. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>PrototiposOrm</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\GenteFit.Datos\GenteFit.Datos.csproj" />
+    <PackageReference Include="Dapper" Version="2.1.66" />
+    <PackageReference Include="linq2db" Version="5.4.1" />
+    <PackageReference Include="RepoDb.SqlServer" Version="1.13.1" />
+  </ItemGroup>
+
+</Project>
