@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Fichero para el vídeo: estructura cambiada con 2 clientes nuevos. Elementos en otro orden,
+     elementos y atributos que GenteFit no conoce, espacios de más y letra del DNI en minúscula. -->
+<clientes version="2" origen="Odoo">
+  <origen>Exportación de prueba desde otro sistema</origen>
+  <cliente dni="56781234f" categoria="premium">
+    <email>  marta.sole@gentefit.test  </email>
+    <observaciones>Prefiere clases de tarde</observaciones>
+    <apellidos>Solé Ibáñez</apellidos>
+    <fechaNacimiento>1988-03-21</fechaNacimiento>
+    <nombre>Marta</nombre>
+  </cliente>
+  <cliente dni="67812345L">
+    <telefono>644 987 654</telefono>
+    <nombre>Joan</nombre>
+    <direccion>
+      <calle>Carrer de l'Àngel, 7</calle>
+      <ciudad>Terrassa</ciudad>
+    </direccion>
+    <apellidos>L'Escala Peña</apellidos>
+    <email>joan.lescala@gentefit.test</email>
+  </cliente>
+</clientes>
