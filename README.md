@@ -1,6 +1,6 @@
 # GenteFit — FP.452 Técnicas de persistencia de datos con .NET y apps ERP
 
-Proyecto de la asignatura FP.452 de la UOC. Aplicación de gestión para el centro deportivo GenteFit, desarrollada con .NET, Entity Framework Core y SQL Server.
+Proyecto de la asignatura FP.452 de la UOC. Aplicación de gestión para el centro deportivo GenteFit, desarrollada con .NET 10, Entity Framework Core 10 y SQL Server.
 
 ## Integrantes
 
@@ -8,133 +8,258 @@ Proyecto de la asignatura FP.452 de la UOC. Aplicación de gestión para el cent
 - Carlos Torras Consolación
 - Argos Anton Panchón
 
-## Descripción del producto
+## Qué contiene el Producto 2
 
-Este repositorio contiene el Producto 2 de la asignatura: la capa de acceso a datos de la aplicación GenteFit, implementada con Entity Framework Core sobre SQL Server. Incluye una demo de consola que permite realizar las operaciones básicas de alta, baja, consulta y modificación de clientes, así como la exportación e importación de datos en formato XML.
+La capa de acceso a datos de GenteFit, con Entity Framework Core sobre SQL Server, y una demo de consola para probarla:
+
+- Alta, baja lógica, consulta y modificación de clientes contra la base de datos.
+- Exportación e importación de clientes en XML, con tolerancia a errores.
+- Una opción que provoca a propósito errores de la base de datos para ver cómo se tratan.
+- Los prototipos con los que comparamos cinco componentes XML.
 
 ## Estructura del repositorio
 
+```
 genteFit/
   src/
-    GenteFit.Datos/       Biblioteca de clases con las entidades, su configuración, los errores, el repositorio, el DbContext y las migraciones
-    GenteFit.Demo/        Aplicación de consola con el menú CRUD y el intercambio XML
+    GenteFit.Datos/       Entidades, configuración, errores, repositorio, DbContext y migraciones
+    GenteFit.Demo/        Demo de consola (menú CRUD, XML y pruebas de errores) y la solución GenteFit.Demo.slnx
     GenteFit.Web/         Proyecto web MVC (reservado para el Producto 3)
-  docs/                   Documentación del producto
-  README.md               Este archivo
+  prototipos/xml/         Comparativa de XmlDocument, LINQ to XML, XmlReader, XmlSerializer y DataSet
+  xml/entrada/            Ficheros XML de prueba para importar
+  docs/GenteFitDB.sql     Script SQL de la base de datos completa
+```
 
-## Requisitos previos
+## Cómo ejecutar el programa
 
-Antes de ejecutar el proyecto, es necesario tener instalado lo siguiente:
+Hacen falta tres cosas: el SDK de .NET 10, un SQL Server y la base de datos creada con la migración. Los pasos cambian según el sistema operativo; sigue solo el apartado del tuyo.
 
-### 1. Visual Studio 2022
+La cadena de conexión no está en el código. El programa lee la variable de entorno `GENTEFIT_BD` y, si no existe, usa SQL Server LocalDB (solo en Windows). Por eso en el repositorio no hay ninguna contraseña.
 
-1. Descarga Visual Studio Community 2022 desde https://visualstudio.microsoft.com/downloads/
-2. Ejecuta el instalador y marca la carga de trabajo "Desarrollo de escritorio de .NET" (.NET desktop development).
-3. Pulsa "Instalar" y espera a que termine.
+### Windows
 
-### 2. SQL Server Express LocalDB
+**1. Instalar el SDK de .NET 10**
 
-1. Abre el Visual Studio Installer.
-2. Pulsa "Modificar" en tu instalación de Visual Studio.
-3. En "Componentes individuales", busca "SQL Server Express LocalDB" y marca la casilla.
-4. Pulsa "Modificar" para instalar.
+Descárgalo de https://dotnet.microsoft.com/download/dotnet/10.0 (apartado SDK, instalador x64) y ejecútalo. Para comprobarlo, abre PowerShell y escribe:
 
-Para verificar que se instaló correctamente, abre una terminal y ejecuta:
-
-sqllocaldb info
-
-Si responde con MSSQLLocalDB, está correctamente instalado.
-
-### 3. .NET SDK
-
-Para verificar si ya lo tienes instalado, abre una terminal y ejecuta:
-
+```powershell
 dotnet --version
+```
 
-Si responde con un número (por ejemplo, 8.0.xxx o 10.0.xxx), ya lo tienes. Si no, instálalo desde https://dotnet.microsoft.com/download
+Tiene que salir un número que empiece por `10.`.
 
-## Instalación y ejecución
+**2. Instalar SQL Server Express LocalDB**
 
-### Paso 1: Clonar el repositorio
+Si tienes Visual Studio 2026, abre el Visual Studio Installer, pulsa «Modificar», ve a «Componentes individuales», marca «SQL Server Express LocalDB» y pulsa «Modificar».
 
-1. Abre Visual Studio.
-2. En la pantalla de inicio, selecciona "Clonar un repositorio".
-3. Pega la URL del repositorio de GitHub del grupo.
-4. Elige una carpeta local donde guardar el proyecto.
-5. Pulsa "Clonar".
-6. Abre el archivo genteFit.sln (o el nombre del archivo de solución) haciendo doble clic sobre él en el Explorador de soluciones.
+Sin Visual Studio, descarga SQL Server Express desde https://www.microsoft.com/sql-server/sql-server-downloads, ejecútalo, elige «Descargar medios», marca «LocalDB» e instala el fichero `SqlLocalDB.msi` que se descarga.
 
-### Paso 2: Restaurar los paquetes NuGet
+Para comprobarlo:
 
-1. En el Explorador de soluciones, haz clic derecho sobre la solución.
-2. Selecciona "Restaurar paquetes NuGet".
-3. Espera a que termine.
+```powershell
+sqllocaldb info
+```
 
-Si no aparece la opción o falla, ve a Herramientas > Administrador de paquetes NuGet > Configuración del Administrador de paquetes y asegúrate de que las dos opciones de "Restauración de paquetes" están marcadas.
+Tiene que salir `MSSQLLocalDB`. Con LocalDB no hay que configurar la variable `GENTEFIT_BD`.
 
-### Paso 3: Verificar la cadena de conexión
+**3. Descargar el proyecto**
 
-En Windows no hay que tocar nada: si no existe la variable de entorno GENTEFIT_BD, GenteFitContext usa LocalDB (Server=(localdb)\MSSQLLocalDB;Database=GenteFitDB). En macOS, ver el apartado "Conexión a la base de datos" más abajo.
+```powershell
+git clone https://github.com/sr-rizquez/genteFit.git
+cd genteFit
+```
 
-### Paso 4: Crear la base de datos
+También se puede descomprimir el ZIP de la entrega y abrir PowerShell dentro de la carpeta `genteFit`.
 
-Este paso hay que hacerlo una sola vez en cada ordenador. Crea la base de datos GenteFitDB con las 9 tablas del modelo y los datos iniciales.
+**4. Instalar la herramienta de migraciones y crear la base de datos**
 
-1. Abre una terminal (PowerShell o CMD).
-2. Navega hasta la carpeta src del proyecto:
-
-cd C:\Proyectos\genteFit\src
-
-(Ajusta la ruta según donde hayas clonado).
-
-3. Ejecuta este comando:
-
-dotnet ef database update --project GenteFit.Datos\GenteFit.Datos.csproj --startup-project GenteFit.Datos\GenteFit.Datos.csproj
-
-4. Espera. Si funciona, verás un mensaje como Applying migration '..._ModeloInicial' y luego Done.
-
-Si el comando dotnet ef no se reconoce, ejecuta primero:
-
+```powershell
 dotnet tool install --global dotnet-ef
-
-Y luego repite el paso 3.
-
-### Paso 5: Establecer GenteFit.Demo como proyecto de inicio
-
-1. En el Explorador de soluciones, haz clic derecho sobre el proyecto GenteFit.Demo.
-2. Selecciona "Establecer como proyecto de inicio".
-3. Comprueba que en la barra de herramientas superior de Visual Studio, el desplegable de proyecto de inicio dice GenteFit.Demo.
-
-### Paso 6: Ejecutar la aplicación
-
-1. Pulsa Ctrl+F5 (ejecutar sin depurar).
-2. Se abrirá una ventana de consola con el menú:
-
-```
---- GENTEFIT ---
-1. Alta de cliente
-2. Baja de cliente
-3. Consulta de clientes
-4. Modificación de cliente
-5. Exportar a XML
-6. Importar desde XML
-7. Probar errores de la base de datos
-0. Salir
-Opción:
+dotnet ef database update --project src\GenteFit.Datos
 ```
 
-3. Prueba cada opción (los errores salen en rojo y los mensajes correctos en verde; ningún error cierra el programa):
-   - 1: alta de cliente. Los campos con * son obligatorios. Cada campo se valida al escribirlo (DNI con la letra correcta, nombre y apellidos solo con letras, email con @, teléfono solo con números) y se vuelve a pedir si está mal. Escribe 0 para cancelar.
-   - 2: baja lógica: el cliente no se borra, se le pone la fecha de baja y queda inactivo. No deja dar de baja a un cliente con reservas activas (E-03).
-   - 3: lista los clientes con su estado (activo o de baja) y cuántos están activos.
-   - 4: modifica cualquier campo de un cliente. Dejar un campo vacío lo conserva.
-   - 5: exporta todos los clientes a `xml/salida/clientes.xml`.
-   - 6: importa clientes de un fichero de `xml/entrada/`.
-   - 7: intenta guardar datos incorrectos sin validarlos, para ver cómo reacciona la base de datos. No se guarda nada.
+Si `dotnet ef` no se reconoce, cierra PowerShell y ábrelo otra vez. Al final tiene que salir `Applying migration '20261024173844_ModeloInicial'` y `Done.`
 
-Para probar el error de base de datos no disponible, apaga SQL Server (en macOS, `docker stop gentefit-sql`) y usa la opción 3: sale `[BD-01]` y el programa sigue funcionando.
+**5. Ejecutar la demo**
 
-Para probar los DNI hay que usar uno con la letra correcta, por ejemplo 12345678Z, 11111111H o 22222222J.
+```powershell
+dotnet run --project src\GenteFit.Demo
+```
+
+Con Visual Studio 2026: abre `src\GenteFit.Demo\GenteFit.Demo.slnx`, haz clic derecho en GenteFit.Demo, «Establecer como proyecto de inicio», y pulsa Ctrl+F5.
+
+### macOS
+
+SQL Server no se instala en macOS, así que se ejecuta en Docker.
+
+**1. Instalar el SDK de .NET 10**
+
+Descarga el instalador para macOS (Arm64 en Mac con Apple Silicon, x64 en Mac con Intel) desde https://dotnet.microsoft.com/download/dotnet/10.0 y ejecútalo. Comprueba en la Terminal:
+
+```bash
+dotnet --version
+```
+
+**2. Instalar Docker Desktop**
+
+Descárgalo de https://www.docker.com/products/docker-desktop/ y ábrelo. En Mac con Apple Silicon, entra en Settings → General y marca «Use Rosetta for x86_64/amd64 emulation on Apple Silicon». Pulsa «Apply & restart».
+
+**3. Arrancar SQL Server**
+
+Elige una contraseña para el usuario `sa`. Tiene que tener al menos 8 caracteres con mayúsculas, minúsculas y números, y sin `!`, `$` ni `;`. Sustituye `<contraseña>` por ella:
+
+```bash
+docker run --platform linux/amd64 -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=<contraseña>" -p 1433:1433 --name gentefit-sql -d mcr.microsoft.com/mssql/server:2022-latest
+```
+
+La primera vez tarda unos minutos en descargar la imagen. Comprueba que está en marcha con `docker ps`: tiene que aparecer `gentefit-sql`. Si después reinicias el Mac, vuelve a arrancarlo con `docker start gentefit-sql`.
+
+**4. Guardar la cadena de conexión**
+
+Con la misma contraseña:
+
+```bash
+echo 'export GENTEFIT_BD="Server=localhost,1433;Database=GenteFitDB;User Id=sa;Password=<contraseña>;TrustServerCertificate=True;Connect Timeout=5"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+**5. Descargar el proyecto**
+
+```bash
+git clone https://github.com/sr-rizquez/genteFit.git
+cd genteFit
+```
+
+O descomprime el ZIP de la entrega y entra en la carpeta `genteFit`.
+
+**6. Instalar la herramienta de migraciones y crear la base de datos**
+
+```bash
+dotnet tool install --global dotnet-ef
+export PATH="$PATH:$HOME/.dotnet/tools"
+dotnet ef database update --project src/GenteFit.Datos
+```
+
+Al final tiene que salir `Applying migration '20261024173844_ModeloInicial'` y `Done.`
+
+**7. Ejecutar la demo**
+
+```bash
+dotnet run --project src/GenteFit.Demo
+```
+
+También se puede abrir con Visual Studio Code (extensión C# Dev Kit) o con Rider.
+
+### Linux
+
+Los pasos son los mismos que en macOS, con SQL Server en Docker. Están probados para Ubuntu y Debian.
+
+**1. Instalar el SDK de .NET 10**
+
+En Ubuntu 24.04 o posterior:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y dotnet-sdk-10.0
+```
+
+Si tu distribución no lo tiene en sus repositorios, sigue https://learn.microsoft.com/dotnet/core/install/linux. Comprueba con `dotnet --version`.
+
+**2. Instalar Docker**
+
+```bash
+sudo apt-get install -y docker.io
+sudo systemctl enable --now docker
+sudo usermod -aG docker $USER
+```
+
+Cierra la sesión y vuelve a entrar para poder usar `docker` sin `sudo`.
+
+**3. Arrancar SQL Server**
+
+Con la contraseña que elijas (las mismas reglas que en macOS):
+
+```bash
+docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=<contraseña>" -p 1433:1433 --name gentefit-sql -d mcr.microsoft.com/mssql/server:2022-latest
+```
+
+**4. Guardar la cadena de conexión**
+
+```bash
+echo 'export GENTEFIT_BD="Server=localhost,1433;Database=GenteFitDB;User Id=sa;Password=<contraseña>;TrustServerCertificate=True;Connect Timeout=5"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+**5 a 7. Descargar el proyecto, crear la base de datos y ejecutar la demo**
+
+Igual que en macOS, pasos 5, 6 y 7.
+
+### Qué tiene que salir
+
+Al ejecutar la demo aparece este menú:
+
+```
+GENTEFIT · Gestión de clientes
+
+CLIENTES
+  1. Alta de cliente
+  2. Baja de cliente
+  3. Consulta de clientes
+  4. Modificación de cliente
+
+INTERCAMBIO XML
+  5. Exportar clientes a XML
+  6. Importar clientes desde XML
+
+PRUEBAS
+  7. Probar errores de la base de datos
+
+  0. Salir
+
+Elige una opción:
+```
+
+Los errores salen en rojo y los mensajes correctos en verde. Ningún error cierra el programa.
+
+- **1:** alta de cliente. Los campos con * son obligatorios y cada uno se valida al escribirlo: DNI con la letra correcta, nombre y apellidos solo con letras, email con @ y teléfono solo con números. Escribe 0 para cancelar. DNI válidos para probar: 12345678Z, 11111111H, 22222222J.
+- **2:** baja lógica. El cliente no se borra: se le pone la fecha de baja y queda inactivo.
+- **3:** lista los clientes con su estado y cuántos están activos.
+- **4:** modifica un cliente. Dejar un campo vacío lo conserva.
+- **5:** exporta todos los clientes a `xml/salida/clientes.xml`.
+- **6:** importa un fichero de `xml/entrada/`. Prueba `clientes.xml` (correcto, con acentos y apóstrofes), `clientes_datos_erroneos.xml`, `clientes_mal_formado.xml`, `clientes_codificacion.xml`, `clientes_estructura_cambiada.xml` y un nombre que no exista, por ejemplo `no_existe`.
+- **7:** intenta guardar datos incorrectos sin validarlos, para ver cómo responde la base de datos. No se guarda nada.
+
+Para probar la base de datos no disponible, en macOS o Linux para SQL Server con `docker stop gentefit-sql` y usa la opción 3: sale `[BD-01]` y el programa sigue funcionando. Después, `docker start gentefit-sql`.
+
+### Prototipos XML
+
+Ejecutan los cinco componentes comparados con los mismos ficheros y guardan los resultados en `prototipos/xml/resultados.md`. No necesitan base de datos:
+
+```bash
+dotnet run --project prototipos/xml
+```
+
+### Si algo falla
+
+| Qué pasa | Qué hacer |
+|---|---|
+| `dotnet` no se reconoce | Cierra y vuelve a abrir la terminal después de instalar el SDK |
+| `dotnet ef` no se reconoce | En macOS y Linux, `export PATH="$PATH:$HOME/.dotnet/tools"`. En Windows, cierra y vuelve a abrir PowerShell |
+| Sale `[BD-01]` al arrancar o al consultar | SQL Server no está en marcha. Windows: `sqllocaldb start MSSQLLocalDB`. macOS o Linux: `docker start gentefit-sql` |
+| `Login failed for user 'sa'` | La contraseña de `GENTEFIT_BD` no coincide con la del contenedor. Revisa `~/.zshrc` o `~/.bashrc` y abre una terminal nueva |
+| El contenedor se para solo nada más arrancar | La contraseña no cumple los requisitos. Bórralo con `docker rm gentefit-sql` y repite el `docker run` con otra |
+| En Mac, el contenedor no arranca | Activa Rosetta en Docker Desktop (paso 2 de macOS) |
+| `Invalid object name 'cliente'` | Falta crear la base de datos: repite `dotnet ef database update --project src/GenteFit.Datos` |
+| Avisos de vulnerabilidades de paquetes NuGet al compilar | Son advertencias, no errores. No impiden ejecutar el programa |
+
+Para dejar la base de datos como recién creada:
+
+```bash
+dotnet ef database drop --project src/GenteFit.Datos --force
+dotnet ef database update --project src/GenteFit.Datos
+```
+
+Si no se puede usar `dotnet ef`, el script `docs/GenteFitDB.sql` crea la misma base de datos desde cualquier cliente de SQL Server (por ejemplo, SQL Server Management Studio o la extensión SQL Server de Visual Studio Code).
 
 ## Capa de persistencia (GenteFit.Datos)
 
@@ -221,40 +346,7 @@ contexto.SaveChanges();                          // grabar
 
 ### Conexión a la base de datos
 
-`GenteFitContext` lee la cadena de conexión de la variable de entorno `GENTEFIT_BD`. Si no existe, usa LocalDB. Así el mismo código funciona en todos los equipos y no hay ninguna contraseña en el repositorio.
-
-- **Windows:** no hay que configurar nada. Se usa LocalDB, igual que antes.
-- **macOS:** SQL Server no se puede instalar en macOS, así que lo ejecuto en Docker y guardo la cadena de conexión en `~/.zshrc`. Hay que usar una contraseña propia, sin `!`, `$` ni `;`:
-
-```bash
-docker run --platform linux/amd64 -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=<contraseña>" -p 1433:1433 --name gentefit-sql -d mcr.microsoft.com/mssql/server:2022-latest
-```
-
-```bash
-echo 'export GENTEFIT_BD="Server=localhost,1433;Database=GenteFitDB;User Id=sa;Password=<contraseña>;TrustServerCertificate=True;Connect Timeout=5"' >> ~/.zshrc
-```
-
-### Cómo poner al día la base de datos después de mi cambio
-
-Como he sustituido `InitialCreate` por `ModeloInicial`, quien ya tuviera la base de datos creada tiene que borrarla y volver a crearla una vez. Desde la carpeta `src`:
-
-```bash
-git switch master
-git pull
-dotnet ef database drop --project GenteFit.Datos --force
-dotnet ef database update --project GenteFit.Datos
-```
-
-En Visual Studio también se puede hacer desde la Consola del Administrador de paquetes, con GenteFit.Datos como proyecto predeterminado:
-
-```
-Drop-Database -Force
-Update-Database
-```
-
-Quedan 9 tablas (`usuario`, `cliente`, `actividad`, `monitor`, `monitor_actividad`, `sala`, `sesion`, `reserva` y `lote_intercambio`) con estos datos iniciales: 6 actividades, 2 salas, 2 monitores y 3 sesiones en noviembre de 2026.
-
-Para volver a dejar la base de datos como recién creada después de hacer pruebas, basta con repetir los dos comandos `drop` y `update`.
+`GenteFitContext` lee la cadena de conexión de la variable de entorno `GENTEFIT_BD`. Si no existe, usa LocalDB. Así el mismo código funciona en todos los equipos y no hay ninguna contraseña en el repositorio. Los pasos para cada sistema están en «Cómo ejecutar el programa».
 
 ### Migraciones
 
@@ -323,59 +415,12 @@ Resultado de los ficheros de prueba:
 | `no_existe.xml` | X-01 |
 | `clientes.xml` por segunda vez | Importados 0 de 3: ya existen |
 
-## Notas
-
-- La base de datos se crea sola con el Paso 4. No hace falta instalar SQL Server Management Studio ni crear tablas a mano.
-- La opción 5 genera `xml/salida/clientes.xml` y la opción 6 lee de `xml/entrada/`, se ejecute el programa desde donde se ejecute (ver «Intercambio XML»).
-- Si Visual Studio muestra warnings sobre vulnerabilidades en paquetes NuGet, son advertencias, no errores. No impiden que el proyecto funcione.
-- Si algo falla, lo primero es comprobar que LocalDB responde (sqllocaldb info) y que los paquetes NuGet se restauraron correctamente.
-
 ## Documentación adicional
 
-- Documento comparativo de ORM y componentes XML: docs/comparativa-orm.md (pendiente de añadir)
-- Enlace al vídeo demo: (pendiente de añadir)
+- Comparativa de ORM y componentes XML y justificación: PDF `producto2Justificacion(P59)` de la entrega.
+- Resultados de los prototipos XML: `prototipos/xml/resultados.md`.
+- Vídeo demostrativo: enlace en el documento `producto2VideoDemo(P59)` de la entrega.
 
 ## Uso de inteligencia artificial
 
 En este producto se ha utilizado IA generativa como herramienta de apoyo para la revisión de código y la redacción de documentación. Todo el contenido generado ha sido revisado y validado por los integrantes del grupo.
-
-## Pendiente
-
-### Base de datos
-
-- [ ] Unir la rama `persistencia` a `master`.
-- [ ] Recrear la base de datos en cada equipo con `dotnet ef database drop` y `dotnet ef database update`, porque la migración `InitialCreate` se ha sustituido por `ModeloInicial`.
-
-### Demo
-
-- [x] Pedir también DNI y apellidos en el alta de cliente.
-- [x] Cambiar la baja de cliente por una baja lógica (`FechaBaja` y `Activo = false`) en lugar de `Remove`.
-- [x] Capturar `GenteFitException` en cada opción del menú y mostrar el código y el mensaje del error.
-- [x] Añadir opciones que demuestren los errores de la base de datos: DNI duplicado, clave foránea inexistente, borrar una actividad con sesiones y base de datos no disponible.
-- [x] Actualizar en este README el menú de la demo y la ruta de los ficheros XML.
-
-### XML
-
-- [x] Crear las carpetas `xml/entrada/` (ficheros de prueba para importar) y `xml/salida/` (ficheros exportados).
-- [x] Usar rutas fijas para importar y exportar, que no dependan de la carpeta desde la que se ejecuta el programa.
-- [x] Añadir `xml/salida/` al `.gitignore`.
-- [x] Preparar los ficheros de prueba: uno correcto con acentos y apóstrofes, uno mal formado, uno con una codificación incorrecta y uno con datos erróneos.
-- [x] Demostrar la tolerancia a errores: fuente no disponible, XML mal formado y caracteres especiales.
-- [x] Decidir qué hacer con `xml/clientes.xml`, que ahora está vacío. Ya lo he  borrado, @Robert, tendras conflicto porqué era un archivo tuyo local, pero estaba vacío.
-
-### Documentación y entrega
-
-- [ ] Redactar la comparativa de más de 3 componentes ORM y más de 3 componentes XML, con la justificación de los elegidos (PDF de 3 a 4 páginas).
-- [ ] Añadir el documento comparativo a `docs/` y actualizar su enlace en «Documentación adicional».
-- [ ] Indicar en el PDF que el intercambio con Odoo es en XML y no en CSV, como aparece por error en el Producto 1.
-- [ ] Incluir la declaración de uso de IA.
-- [ ] Grabar el vídeo de unos 5 minutos con la participación de los tres, subirlo a YouTube como oculto y preparar el documento con el enlace.
-- [ ] Añadir el vídeo al Site del grupo y su enlace a este README.
-- [ ] Preparar el ZIP de la solución, sin las carpetas `bin`, `obj` ni contraseñas.
-- [ ] Actualizar el acta con las decisiones del Producto 2.
-
-### Para el Producto 3
-
-- [ ] Implementar los métodos del dominio del diagrama de clases (`Sesion.AnyadirReserva()`, `Sesion.CancelarReserva()`, `Cliente.DarDeBaja()`…).
-- [ ] Implementar los servicios de la capa de negocio (`ServicioReservas`, `ServicioClientes`, `ServicioActividades`…).
-- [ ] Adaptar `GenteFit.Web` al modelo nuevo.
