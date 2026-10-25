@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Guardado en ISO-8859-1 pero declara UTF-8: los acentos no son UTF-8 valido y el lector da error. -->
+<clientes>
+  <cliente dni="11111111H">
+    <nombre>Àngels</nombre>
+    <apellidos>D'Alòs Núñez</apellidos>
+    <email>angels.dalos@gentefit.test</email>
+  </cliente>
+</clientes>

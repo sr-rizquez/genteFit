@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Fichero para el vídeo: 3 clientes nuevos con acentos, ñ, ç y apóstrofes. -->
+<clientes>
+  <cliente dni="23456781R">
+    <nombre>Èric</nombre>
+    <apellidos>D'Amico Muñoz</apellidos>
+    <email>eric.damico@gentefit.test</email>
+    <telefono>622 123 456</telefono>
+  </cliente>
+  <cliente dni="34567812P">
+    <nombre>Inés</nombre>
+    <apellidos>O'Brien Castaño</apellidos>
+    <email>ines.obrien@gentefit.test</email>
+  </cliente>
+  <cliente dni="45678123P">
+    <nombre>Francesc</nombre>
+    <apellidos>Garcia i Rovira</apellidos>
+    <email>francesc.garcia@gentefit.test</email>
+    <telefono>+34 633 456 789</telefono>
+  </cliente>
+</clientes>

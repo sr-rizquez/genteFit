@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Clientes correctos para importar. Incluyen acentos, ñ, ç y apóstrofes. -->
+<clientes>
+  <cliente dni="11111111H">
+    <nombre>Àngels</nombre>
+    <apellidos>D'Alòs Núñez</apellidos>
+    <email>angels.dalos@gentefit.test</email>
+    <telefono>600 111 111</telefono>
+  </cliente>
+  <cliente dni="22222222J">
+    <nombre>María José</nombre>
+    <apellidos>O'Connor Puig</apellidos>
+    <email>mariajose.oconnor@gentefit.test</email>
+  </cliente>
+  <cliente dni="33333333P">
+    <nombre>Gonçal</nombre>
+    <apellidos>Peñalver i Font</apellidos>
+    <email>gonzal.penalver@gentefit.test</email>
+    <telefono>+34 655 333 333</telefono>
+  </cliente>
+</clientes>

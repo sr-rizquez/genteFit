@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- XML bien escrito, pero con datos incorrectos: solo se importa el primer cliente y se descartan los demás. -->
+<clientes>
+  <cliente dni="44444444A">
+    <nombre>Laia</nombre>
+    <apellidos>Vidal Soler</apellidos>
+    <email>laia.vidal@gentefit.test</email>
+  </cliente>
+  <cliente dni="55555555X">
+    <nombre>Letra</nombre>
+    <apellidos>Incorrecta</apellidos>
+    <email>letra.incorrecta@gentefit.test</email>
+  </cliente>
+  <cliente dni="66666666Q">
+    <nombre>Pep3</nombre>
+    <apellidos>Con Números</apellidos>
+    <email>pep@gentefit.test</email>
+  </cliente>
+  <cliente dni="77777777B">
+    <nombre>Sin</nombre>
+    <apellidos>Email</apellidos>
+  </cliente>
+  <cliente dni="87654321X">
+    <nombre>Email</nombre>
+    <apellidos>Sin Arroba</apellidos>
+    <email>sin-arroba.gentefit.test</email>
+  </cliente>
+  <cliente dni="12345678Z">
+    <nombre>Teléfono</nombre>
+    <apellidos>Con Letras</apellidos>
+    <email>telefono@gentefit.test</email>
+    <telefono>seis cero cero</telefono>
+  </cliente>
+  <cliente>
+    <nombre>Sin</nombre>
+    <apellidos>DNI</apellidos>
+    <email>sin.dni@gentefit.test</email>
+  </cliente>
+  <cliente dni="44444444A">
+    <nombre>Laia</nombre>
+    <apellidos>Repetida</apellidos>
+    <email>laia.repetida@gentefit.test</email>
+  </cliente>
+</clientes>

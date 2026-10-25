@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- XML mal formado: tiene un & sin escapar (debería ser &amp;) y una etiqueta sin cerrar. No se puede leer. -->
+<clientes>
+  <cliente dni="11111111H">
+    <nombre>Yoga & Pilates</nombre>
+    <apellidos>Sin cerrar
+  </cliente>
+</clientes>

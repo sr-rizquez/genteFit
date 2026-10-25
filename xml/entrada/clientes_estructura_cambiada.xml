@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Estructura cambiada: elementos en otro orden, elementos y atributos que GenteFit no conoce,
+     espacios de más y la letra del DNI en minúscula. El lector busca cada dato por su nombre,
+     así que ignora lo que no conoce y se importan los 2 clientes. -->
+<clientes version="2" origen="Odoo">
+  <origen>Exportación de prueba desde otro sistema</origen>
+  <cliente dni="88888888y" categoria="premium">
+    <email>  jordi.cases@gentefit.test  </email>
+    <observaciones>Prefiere clases de mañana</observaciones>
+    <apellidos>Cases Rovira</apellidos>
+    <fechaNacimiento>1990-05-12</fechaNacimiento>
+    <nombre>Jordi</nombre>
+  </cliente>
+  <cliente dni="99999999R">
+    <telefono>611 999 999</telefono>
+    <nombre>Núria</nombre>
+    <direccion>
+      <calle>Carrer de l'Escola, 3</calle>
+      <ciudad>Sabadell</ciudad>
+    </direccion>
+    <apellidos>L'Hereu Ibáñez</apellidos>
+    <email>nuria.lhereu@gentefit.test</email>
+  </cliente>
+</clientes>
