@@ -1,0 +1,67 @@
+﻿@model IEnumerable<GenteFit.Datos.Sesion>
+@{
+    ViewData["Title"] = "Sesiones disponibles";
+}
+<div class="container mt-4">
+    <h1>Sesiones disponibles</h1>
+
+    @if (TempData["Error"] != null) { <div class="alert alert-danger">@TempData["Error"]</div> }
+    @if (TempData["Mensaje"] != null) { <div class="alert alert-success">@TempData["Mensaje"]</div> }
+
+    <a asp-action="Index" asp-route-idCliente="@ViewBag.IdCliente" class="btn btn-outline-secondary mb-3">Volver a mis reservas</a>
+
+    <form method="get" asp-action="Disponibles" class="row g-2 mb-4">
+        <input type="hidden" name="idCliente" value="@ViewBag.IdCliente" />
+        <div class="col-md-4">
+            <label class="form-label">Desde</label>
+            <input type="date" name="desde" value="@(((DateTime)ViewBag.Desde).ToString("yyyy-MM-dd"))" class="form-control" />
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Hasta</label>
+            <input type="date" name="hasta" value="@(((DateTime)ViewBag.Hasta).ToString("yyyy-MM-dd"))" class="form-control" />
+        </div>
+        <div class="col-md-4 d-flex align-items-end">
+            <button type="submit" class="btn btn-outline-primary">Filtrar sesiones</button>
+        </div>
+    </form>
+
+    @if (Model.Any())
+    {
+        <div class="row">
+        @foreach (var sesion in Model)
+        {
+            <div class="col-md-6 col-lg-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">@sesion.Actividad?.Nombre</h5>
+                        <p class="card-text">
+                            <strong>Fecha:</strong> @sesion.FechaHoraInicio.ToString("dd/MM/yyyy")<br />
+                            <strong>Hora:</strong> @sesion.FechaHoraInicio.ToString("HH:mm")<br />
+                            <strong>Sala:</strong> @sesion.Sala?.Nombre<br />
+                            <strong>Monitor:</strong> @sesion.Monitor?.Nombre @sesion.Monitor?.Apellidos<br />
+                            <strong>Estado:</strong> @sesion.Estado
+                        </p>
+                        @if (sesion.Estado == GenteFit.Datos.EstadoSesion.PROGRAMADA &&
+                             sesion.FechaHoraInicio > DateTime.Now)
+                        {
+                            <form asp-action="Reservar" method="post">
+                                <input type="hidden" name="idCliente" value="@ViewBag.IdCliente" />
+                                <input type="hidden" name="idSesion" value="@sesion.Id" />
+                                <button type="submit" class="btn btn-primary">Reservar sesión</button>
+                            </form>
+                        }
+                        else
+                        {
+                            <button class="btn btn-secondary" disabled>No disponible</button>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">No hay sesiones programadas en el periodo seleccionado.</div>
+    }
+</div>

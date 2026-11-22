@@ -1,0 +1,61 @@
+﻿@model IEnumerable<GenteFit.Datos.Reserva>
+@{
+    ViewData["Title"] = "Mis reservas";
+}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Mis reservas</h1>
+        <a class="btn btn-primary" asp-action="Disponibles" asp-route-idCliente="@ViewBag.IdCliente">Buscar sesiones</a>
+    </div>
+
+    @if (TempData["Mensaje"] != null) { <div class="alert alert-success">@TempData["Mensaje"]</div> }
+    @if (TempData["Error"] != null) { <div class="alert alert-danger">@TempData["Error"]</div> }
+
+    @if (Model.Any())
+    {
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead><tr><th>Actividad</th><th>Fecha y hora</th><th>Estado</th><th></th></tr></thead>
+                <tbody>
+                @foreach (var reserva in Model)
+                {
+                    <tr>
+                        <td>@reserva.Sesion?.Actividad?.Nombre</td>
+                        <td>@reserva.Sesion?.FechaHoraInicio.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>
+                            @switch (reserva.Estado)
+                            {
+                                case GenteFit.Datos.EstadoReserva.CONFIRMADA:
+                                    <span class="badge bg-success">Confirmada</span>
+                                    break;
+                                case GenteFit.Datos.EstadoReserva.EN_ESPERA:
+                                    <span class="badge bg-warning text-dark">En espera</span>
+                                    break;
+                                default:
+                                    <span class="badge bg-secondary">Cancelada</span>
+                                    break;
+                            }
+                        </td>
+                        <td class="text-end">
+                            @if (reserva.Estado != GenteFit.Datos.EstadoReserva.CANCELADA &&
+                                 reserva.Sesion?.FechaHoraInicio > DateTime.Now)
+                            {
+                                <form asp-action="Cancelar" method="post">
+                                    <input type="hidden" name="idReserva" value="@reserva.Id" />
+                                    <input type="hidden" name="idCliente" value="@ViewBag.IdCliente" />
+                                    <button type="submit" class="btn btn-outline-danger btn-sm"
+                                            onclick="return confirm('¿Quieres cancelar esta reserva?')">Cancelar</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">Todavía no tienes reservas.</div>
+    }
+</div>

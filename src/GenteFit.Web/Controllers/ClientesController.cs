@@ -1,87 +1,91 @@
 ﻿using GenteFit.Datos;
+using GenteFit.Negocio.Servicios;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
-namespace GenteFit.Web.Controllers
+namespace GenteFit.Web.Controllers;
+
+[Authorize(Roles = "ADMINISTRADOR,RECEPCIONISTA")]
+public class ClientesController : Controller
 {
-    public class ClientesController : Controller
+    private readonly ServicioClientes _servicio;
+
+    public ClientesController(ServicioClientes servicio)
     {
-        private readonly GenteFitContext _context;
+        _servicio = servicio;
+    }
 
-        public ClientesController(GenteFitContext context)
-        {
-            _context = context;
-        }
+    public IActionResult Index(string? texto, bool soloActivos = true)
+    {
+        ViewBag.Texto = texto;
+        ViewBag.SoloActivos = soloActivos;
+        return View(_servicio.Buscar(texto ?? "", soloActivos));
+    }
 
-        public async Task<IActionResult> Index()
-        {
-            return View(await _context.Clientes.ToListAsync());
-        }
+    public IActionResult Details(int id)
+    {
+        try { return View(_servicio.Obtener(id)); }
+        catch (KeyNotFoundException) { return NotFound(); }
+    }
 
-        public async Task<IActionResult> Details(int? id)
-        {
-            if (id == null) return NotFound();
-            var cliente = await _context.Clientes.FirstOrDefaultAsync(m => m.Id == id);
-            if (cliente == null) return NotFound();
-            return View(cliente);
-        }
+    public IActionResult Create() => View(new Cliente());
 
-        public IActionResult Create()
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult Create(Cliente cliente)
+    {
+        try
         {
-            return View();
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Nombre,Email")] Cliente cliente)
-        {
-            if (ModelState.IsValid)
-            {
-                _context.Add(cliente);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
-            }
-            return View(cliente);
-        }
-
-        public async Task<IActionResult> Edit(int? id)
-        {
-            if (id == null) return NotFound();
-            var cliente = await _context.Clientes.FindAsync(id);
-            if (cliente == null) return NotFound();
-            return View(cliente);
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Nombre,Email")] Cliente cliente)
-        {
-            if (id != cliente.Id) return NotFound();
-            if (ModelState.IsValid)
-            {
-                _context.Update(cliente);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
-            }
-            return View(cliente);
-        }
-
-        public async Task<IActionResult> Delete(int? id)
-        {
-            if (id == null) return NotFound();
-            var cliente = await _context.Clientes.FirstOrDefaultAsync(m => m.Id == id);
-            if (cliente == null) return NotFound();
-            return View(cliente);
-        }
-
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
-        {
-            var cliente = await _context.Clientes.FindAsync(id);
-            if (cliente != null) _context.Clientes.Remove(cliente);
-            await _context.SaveChangesAsync();
+            _servicio.CrearCliente(cliente);
+            TempData["Mensaje"] = "Cliente creado correctamente.";
             return RedirectToAction(nameof(Index));
         }
+        catch (Exception ex) when (ex is InvalidOperationException || ex is ArgumentException)
+        {
+            ModelState.AddModelError("", ex.Message);
+            return View(cliente);
+        }
+    }
+
+    public IActionResult Edit(int id)
+    {
+        try { return View(_servicio.Obtener(id)); }
+        catch (KeyNotFoundException) { return NotFound(); }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult Edit(int id, Cliente cliente)
+    {
+        if (id != cliente.Id) return NotFound();
+
+        try
+        {
+            _servicio.ModificarCliente(cliente);
+            TempData["Mensaje"] = "Datos del cliente actualizados.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
+        catch (Exception ex) when (ex is InvalidOperationException || ex is ArgumentException || ex is KeyNotFoundException)
+        {
+            ModelState.AddModelError("", ex.Message);
+            return View(cliente);
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult DarDeBaja(int id, bool cancelarReservas = false)
+    {
+        try
+        {
+            _servicio.DarDeBaja(id, cancelarReservas);
+            TempData["Mensaje"] = "Cliente dado de baja correctamente.";
+        }
+        catch (Exception ex) when (ex is InvalidOperationException || ex is KeyNotFoundException)
+        {
+            TempData["Error"] = ex.Message;
+        }
+
+        return RedirectToAction(nameof(Details), new { id });
     }
 }

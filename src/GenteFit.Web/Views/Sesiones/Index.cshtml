@@ -1,0 +1,114 @@
+﻿@model IEnumerable<GenteFit.Datos.Sesion>
+
+@{
+    ViewData["Title"] = "Sesiones";
+    var actividades = ViewBag.Actividades as List<GenteFit.Datos.Actividad>
+        ?? new List<GenteFit.Datos.Actividad>();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Sesiones</h1>
+    <a asp-action="Crear" class="btn btn-primary">Programar sesión</a>
+</div>
+
+@if (TempData["Mensaje"] != null)
+{
+    <div class="alert alert-success">@TempData["Mensaje"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<form method="get" class="row g-3 mb-4">
+    <div class="col-md-4">
+        <label class="form-label">Actividad</label>
+        <select name="idActividad" class="form-select">
+            <option value="">Todas las actividades</option>
+            @foreach (var actividad in actividades)
+            {
+                <option value="@actividad.Id"
+                        selected="@(ViewBag.IdActividad != null && (int)ViewBag.IdActividad == actividad.Id)">
+                    @actividad.Nombre
+                </option>
+            }
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Desde</label>
+        <input type="date" name="desde" value="@ViewBag.Desde" class="form-control" />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Hasta</label>
+        <input type="date" name="hasta" value="@ViewBag.Hasta" class="form-control" />
+    </div>
+    <div class="col-md-2 d-flex align-items-end">
+        <button type="submit" class="btn btn-outline-primary me-2">Filtrar</button>
+        <a asp-action="Index" class="btn btn-outline-secondary">Limpiar</a>
+    </div>
+</form>
+
+<div class="table-responsive">
+    <table class="table table-striped table-hover align-middle">
+        <thead>
+            <tr>
+                <th>Fecha y hora</th>
+                <th>Actividad</th>
+                <th>Sala</th>
+                <th>Monitor</th>
+                <th>Reservas</th>
+                <th>Estado</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var sesion in Model)
+        {
+            var confirmadas = sesion.Reservas.Count(r =>
+                r.Estado == GenteFit.Datos.EstadoReserva.CONFIRMADA);
+            var enEspera = sesion.Reservas.Count(r =>
+                r.Estado == GenteFit.Datos.EstadoReserva.EN_ESPERA);
+
+            <tr>
+                <td>@sesion.FechaHoraInicio.ToString("dd/MM/yyyy HH:mm")</td>
+                <td>@sesion.Actividad.Nombre</td>
+                <td>@sesion.Sala.Nombre</td>
+                <td>@sesion.Monitor.Nombre @sesion.Monitor.Apellidos</td>
+                <td>@confirmadas confirmadas / @enEspera en espera</td>
+                <td>
+                    @switch (sesion.Estado)
+                    {
+                        case GenteFit.Datos.EstadoSesion.PROGRAMADA:
+                            <span class="badge bg-success">Programada</span>
+                            break;
+                        case GenteFit.Datos.EstadoSesion.CANCELADA:
+                            <span class="badge bg-danger">Cancelada</span>
+                            break;
+                        case GenteFit.Datos.EstadoSesion.REALIZADA:
+                            <span class="badge bg-secondary">Realizada</span>
+                            break;
+                    }
+                </td>
+                <td>
+                    @if (sesion.Estado == GenteFit.Datos.EstadoSesion.PROGRAMADA
+                        && sesion.FechaHoraInicio > DateTime.Now)
+                    {
+                        <form asp-action="Cancelar" asp-route-id="@sesion.Id"
+                              method="post"
+                              onsubmit="return confirm('¿Cancelar esta sesión?');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                Cancelar
+                            </button>
+                        </form>
+                    }
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
+
+@if (!Model.Any())
+{
+    <p class="text-muted">No se han encontrado sesiones.</p>
+}

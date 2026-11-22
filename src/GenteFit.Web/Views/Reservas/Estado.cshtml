@@ -1,0 +1,35 @@
+﻿@model GenteFit.Negocio.Modelos.EstadoSesionDto
+@{
+    ViewData["Title"] = "Estado de la sesión";
+}
+<div class="container mt-4">
+    <h1>Estado de la sesión</h1>
+    <h4>@Model.Sesion.Actividad?.Nombre</h4>
+    <p>Fecha: @Model.Sesion.FechaHoraInicio.ToString("dd/MM/yyyy HH:mm")</p>
+    <p>Estado: @Model.Sesion.Estado</p>
+
+    <div class="row mb-4">
+        <div class="col-md-4"><div class="card card-body"><strong>Plazas libres</strong><span class="fs-3">@Model.PlazasLibres</span></div></div>
+        <div class="col-md-4"><div class="card card-body"><strong>Confirmadas</strong><span class="fs-3">@Model.Confirmadas.Count</span></div></div>
+        <div class="col-md-4"><div class="card card-body"><strong>Lista de espera</strong><span class="fs-3">@Model.EnEspera.Count</span></div></div>
+    </div>
+
+    @if (User.IsInRole("ADMINISTRADOR") || User.IsInRole("RECEPCIONISTA"))
+    {
+        <h5>Reservas confirmadas</h5>
+        <ul>
+        @foreach (var reserva in Model.Confirmadas)
+        {
+            <li>@reserva.Cliente?.Nombre @reserva.Cliente?.Apellidos</li>
+        }
+        </ul>
+        <h5>Lista de espera</h5>
+        <ol>
+        @foreach (var reserva in Model.EnEspera)
+        {
+            <li>@reserva.Cliente?.Nombre @reserva.Cliente?.Apellidos</li>
+        }
+        </ol>
+    }
+    <a asp-controller="Sesiones" asp-action="Index" class="btn btn-outline-secondary">Volver a sesiones</a>
+</div>

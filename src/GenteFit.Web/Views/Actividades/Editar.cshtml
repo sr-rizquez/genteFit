@@ -1,0 +1,71 @@
+﻿@model GenteFit.Datos.Actividad
+
+@{
+    ViewData["Title"] = "Editar actividad";
+    var monitores = ViewBag.Monitores as List<GenteFit.Datos.Monitor>
+        ?? new List<GenteFit.Datos.Monitor>();
+    var seleccionados = ViewBag.MonitoresSeleccionados as int[]
+        ?? Array.Empty<int>();
+}
+
+<h1 class="mb-4">Editar actividad</h1>
+
+<form asp-action="Editar" asp-route-id="@Model.Id" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Id" />
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+    <div class="mb-3">
+        <label asp-for="Nombre" class="form-label">Nombre</label>
+        <input asp-for="Nombre" class="form-control" />
+        <span asp-validation-for="Nombre" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Tipo" class="form-label">Tipo</label>
+        <select asp-for="Tipo" asp-items="Html.GetEnumSelectList<GenteFit.Datos.TipoActividad>()"
+                class="form-select"></select>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Descripcion" class="form-label">Descripción</label>
+        <textarea asp-for="Descripcion" class="form-control" rows="3"></textarea>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Intensidad" class="form-label">Intensidad</label>
+        <select asp-for="Intensidad"
+                asp-items="Html.GetEnumSelectList<GenteFit.Datos.NivelIntensidad>()"
+                class="form-select"></select>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="DuracionMinutos" class="form-label">Duración (minutos)</label>
+        <input asp-for="DuracionMinutos" type="number" min="1" class="form-control" />
+        <span asp-validation-for="DuracionMinutos" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Monitores asignados</label>
+        @foreach (var monitor in monitores)
+        {
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox"
+                       name="idsMonitores" value="@monitor.Id"
+                       id="monitor_@monitor.Id"
+                       checked="@seleccionados.Contains(monitor.Id)" />
+                <label class="form-check-label" for="monitor_@monitor.Id">
+                    @monitor.Nombre @monitor.Apellidos
+                </label>
+            </div>
+        }
+    </div>
+
+    <div class="form-check mb-4">
+        <input asp-for="Activa" class="form-check-input" />
+        <label asp-for="Activa" class="form-check-label">Actividad activa</label>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Guardar cambios</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+</form>

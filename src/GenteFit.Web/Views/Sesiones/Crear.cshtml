@@ -1,0 +1,75 @@
+﻿@{
+    ViewData["Title"] = "Programar sesión";
+
+    var actividades = ViewBag.Actividades as List<GenteFit.Datos.Actividad>
+        ?? new List<GenteFit.Datos.Actividad>();
+    var salas = ViewBag.Salas as List<GenteFit.Datos.Sala>
+        ?? new List<GenteFit.Datos.Sala>();
+    var monitores = ViewBag.Monitores as List<GenteFit.Datos.Monitor>
+        ?? new List<GenteFit.Datos.Monitor>();
+}
+
+<h1 class="mb-4">Programar sesión</h1>
+
+<form asp-action="Crear" method="post">
+    @Html.AntiForgeryToken()
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+    <div class="mb-3">
+        <label class="form-label">Actividad</label>
+        <select name="idActividad" class="form-select" required>
+            <option value="">Selecciona una actividad</option>
+            @foreach (var actividad in actividades)
+            {
+                <option value="@actividad.Id">
+                    @actividad.Nombre (@actividad.DuracionMinutos min)
+                </option>
+            }
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Sala</label>
+        <select name="idSala" class="form-select" required>
+            <option value="">Selecciona una sala</option>
+            @foreach (var sala in salas)
+            {
+                <option value="@sala.Id">
+                    @sala.Nombre (aforo: @sala.Aforo)
+                </option>
+            }
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Monitor</label>
+        <select name="idMonitor" class="form-select" required>
+            <option value="">Selecciona un monitor</option>
+            @foreach (var monitor in monitores)
+            {
+                <option value="@monitor.Id">
+                    @monitor.Nombre @monitor.Apellidos
+                </option>
+            }
+        </select>
+        <small class="form-text text-muted">
+            Solo se admiten monitores habilitados para la actividad seleccionada.
+        </small>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Fecha y hora de inicio</label>
+        <input type="datetime-local" name="inicio" class="form-control" required />
+    </div>
+
+    <div class="mb-4">
+        <label class="form-label">Repetir semanalmente hasta (opcional)</label>
+        <input type="date" name="repetirHasta" class="form-control" />
+        <small class="form-text text-muted">
+            Si indicas una fecha, se programará una sesión cada semana hasta ese día.
+        </small>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Programar</button>
+    <a asp-action="Index" class="btn btn-secondary">Volver</a>
+</form>

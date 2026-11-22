@@ -1,0 +1,47 @@
+﻿@model GenteFit.Web.Models.CrearUsuarioViewModel
+@{
+    ViewData["Title"] = "Crear usuario";
+}
+
+<h2 class="mb-4">Crear usuario</h2>
+
+<form asp-action="Crear" method="post" class="col-md-7">
+    @Html.AntiForgeryToken()
+    <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+    <div class="mb-3">
+        <label asp-for="NombreUsuario" class="form-label"></label>
+        <input asp-for="NombreUsuario" class="form-control" />
+        <span asp-validation-for="NombreUsuario" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Email" class="form-label"></label>
+        <input asp-for="Email" class="form-control" />
+        <span asp-validation-for="Email" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Contrasena" class="form-label"></label>
+        <input asp-for="Contrasena" class="form-control" />
+        <span asp-validation-for="Contrasena" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Rol" class="form-label"></label>
+        <select asp-for="Rol"
+                asp-items="Html.GetEnumSelectList<GenteFit.Datos.Rol>()"
+                class="form-select"></select>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="IdCliente" class="form-label"></label>
+        <select asp-for="IdCliente" asp-items="ViewBag.Clientes"
+                class="form-select">
+            <option value="">Sin cliente vinculado</option>
+        </select>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Crear</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+</form>

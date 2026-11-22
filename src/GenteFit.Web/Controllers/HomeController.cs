@@ -1,10 +1,12 @@
-using GenteFit.Web.Models;
+﻿using GenteFit.Web.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 
 namespace GenteFit.Web.Controllers
 {
-    public class HomeController : Controller
+    [Authorize]
+public class HomeController : Controller
     {
         public IActionResult Index()
         {
@@ -17,9 +19,11 @@ namespace GenteFit.Web.Controllers
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+        [AllowAnonymous]
         public IActionResult Error()
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
     }
 }
+

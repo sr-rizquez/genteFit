@@ -1,0 +1,28 @@
+﻿@model GenteFit.Datos.Sala
+
+@{
+    ViewData["Title"] = "Editar sala";
+}
+
+<h1 class="mb-4">Editar sala</h1>
+
+<form asp-action="Editar" asp-route-id="@Model.Id" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Id" />
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+    <div class="mb-3">
+        <label asp-for="Nombre" class="form-label">Nombre</label>
+        <input asp-for="Nombre" class="form-control" />
+        <span asp-validation-for="Nombre" class="text-danger"></span>
+    </div>
+
+    <div class="mb-4">
+        <label asp-for="Aforo" class="form-label">Aforo máximo</label>
+        <input asp-for="Aforo" type="number" min="1" class="form-control" />
+        <span asp-validation-for="Aforo" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Guardar cambios</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+</form>
