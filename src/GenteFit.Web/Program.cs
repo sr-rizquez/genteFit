@@ -2,14 +2,19 @@
 using GenteFit.Negocio.Servicios;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
+using GenteFit.Web;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
 
+// Igual que en el Producto 2: primero la variable de entorno GENTEFIT_BD (Docker, macOS, Linux)
+// y, si no existe, la cadena de appsettings.json (LocalDB en Windows)
+string cadenaConexion = Environment.GetEnvironmentVariable("GENTEFIT_BD")
+    ?? builder.Configuration.GetConnectionString("DefaultConnection")!;
+
 builder.Services.AddDbContext<GenteFitContext>(options =>
-    options.UseSqlServer(
-        builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(cadenaConexion));
 
 builder.Services.AddScoped<ServicioReservas>();
 builder.Services.AddScoped<ServicioClientes>();
@@ -34,6 +39,8 @@ builder.Services
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
+
+InicioBaseDatos.Preparar(app.Services, app.Logger);
 
 if (!app.Environment.IsDevelopment())
 {
