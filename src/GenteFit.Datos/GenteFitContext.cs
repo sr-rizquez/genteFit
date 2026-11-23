@@ -5,10 +5,6 @@ namespace GenteFit.Datos;
 
 public class GenteFitContext : DbContext
 {
-    // Windows: LocalDB, sin configurar nada. Mac: la variable de entorno GENTEFIT_BD.
-    private const string CadenaLocalDb =
-        @"Server=(localdb)\MSSQLLocalDB;Database=GenteFitDB;Trusted_Connection=True;TrustServerCertificate=True;";
-
     public GenteFitContext() { }
     public GenteFitContext(DbContextOptions<GenteFitContext> options) : base(options) { }
 
@@ -25,8 +21,8 @@ public class GenteFitContext : DbContext
     {
         if (!optionsBuilder.IsConfigured)
         {
-            string cadena = Environment.GetEnvironmentVariable("GENTEFIT_BD") ?? CadenaLocalDb;
-            optionsBuilder.UseSqlServer(cadena);
+            // GENTEFIT_BD o LocalDB; en Windows ARM se busca sola la dirección de LocalDB.
+            optionsBuilder.UseSqlServer(CadenaConexion.Obtener());
         }
         optionsBuilder.UseSnakeCaseNamingConvention();
     }

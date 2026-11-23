@@ -4,7 +4,7 @@
 }
 <div class="container mt-4">
     <h1>Estado de la sesión</h1>
-    <h4>@Model.Sesion.Actividad?.Nombre</h4>
+    <h4><span class="@EstiloActividad.Clase(Model.Sesion.Actividad)">@Model.Sesion.Actividad?.Nombre</span></h4>
     <p>Fecha: @Model.Sesion.FechaHoraInicio.ToString("dd/MM/yyyy HH:mm")</p>
     <p>Estado: @Model.Sesion.Estado</p>
 

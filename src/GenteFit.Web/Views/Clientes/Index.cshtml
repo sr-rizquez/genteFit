@@ -48,6 +48,7 @@
                 @if (cliente.Activo)
                 {
                     <a asp-action="Edit" asp-route-id="@cliente.Id" class="btn btn-sm btn-outline-secondary">Editar</a>
+                    <a asp-controller="Reservas" asp-action="Index" asp-route-idCliente="@cliente.Id" class="btn btn-sm btn-primary">Reservas</a>
                 }
             </td>
         </tr>

@@ -71,7 +71,7 @@
 
             <tr>
                 <td>@sesion.FechaHoraInicio.ToString("dd/MM/yyyy HH:mm")</td>
-                <td>@sesion.Actividad.Nombre</td>
+                <td><span class="@EstiloActividad.Clase(sesion.Actividad)">@sesion.Actividad.Nombre</span></td>
                 <td>@sesion.Sala.Nombre</td>
                 <td>@sesion.Monitor.Nombre @sesion.Monitor.Apellidos</td>
                 <td>@confirmadas confirmadas / @enEspera en espera</td>

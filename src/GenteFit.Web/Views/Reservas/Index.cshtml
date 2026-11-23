@@ -20,7 +20,7 @@
                 @foreach (var reserva in Model)
                 {
                     <tr>
-                        <td>@reserva.Sesion?.Actividad?.Nombre</td>
+                        <td><span class="@EstiloActividad.Clase(reserva.Sesion?.Actividad)">@reserva.Sesion?.Actividad?.Nombre</span></td>
                         <td>@reserva.Sesion?.FechaHoraInicio.ToString("dd/MM/yyyy HH:mm")</td>
                         <td>
                             @switch (reserva.Estado)

@@ -1,8 +1,85 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@model GenteFit.Web.Models.PanelViewModel
+@{
+    ViewData["Title"] = "Panel";
 }
+<h1 class="mb-1">Panel del centro</h1>
+<p class="text-muted mb-4">Resumen de los próximos 7 días.</p>
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg">
+        <div class="card h-100"><div class="card-body">
+            <div class="text-muted small">Clientes activos</div>
+            <div class="fs-2 fw-bold">@Model.ClientesActivos</div>
+        </div></div>
+    </div>
+    <div class="col-6 col-lg">
+        <div class="card h-100"><div class="card-body">
+            <div class="text-muted small">Sesiones programadas</div>
+            <div class="fs-2 fw-bold">@Model.SesionesSemana</div>
+        </div></div>
+    </div>
+    <div class="col-6 col-lg">
+        <div class="card h-100"><div class="card-body">
+            <div class="text-muted small">Reservas confirmadas</div>
+            <div class="fs-2 fw-bold">@Model.ReservasConfirmadas</div>
+        </div></div>
+    </div>
+    <div class="col-6 col-lg">
+        <div class="card h-100"><div class="card-body">
+            <div class="text-muted small">Personas en espera</div>
+            <div class="fs-2 fw-bold">@Model.PersonasEnEspera</div>
+        </div></div>
+    </div>
+    <div class="col-12 col-lg">
+        <div class="card h-100"><div class="card-body">
+            <div class="text-muted small">Ocupación media</div>
+            <div class="fs-2 fw-bold">@Model.OcupacionMedia %</div>
+            <div class="small text-muted">Más demandada: @(Model.ActividadMasReservada ?? "sin reservas aún")</div>
+        </div></div>
+    </div>
 </div>
+
+<div class="d-flex flex-wrap gap-2 mb-4">
+    <a class="btn btn-primary" asp-controller="Clientes" asp-action="Index">Seleccionar cliente</a>
+    <a class="btn btn-outline-primary" asp-controller="Sesiones" asp-action="Index">Horario</a>
+    <a class="btn btn-outline-primary" asp-controller="Usuarios" asp-action="Index">Usuarios y roles</a>
+</div>
+
+<h2 class="h4">Próximas sesiones</h2>
+@if (Model.Proximas.Count == 0)
+{
+    <p>No hay sesiones programadas en los próximos 7 días.</p>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr><th>Día y hora</th><th>Actividad</th><th>Sala</th><th>Ocupación</th><th>En espera</th><th></th></tr>
+            </thead>
+            <tbody>
+            @foreach (var s in Model.Proximas)
+            {
+                <tr>
+                    <td>@s.Inicio.ToString("ddd dd/MM HH:mm")</td>
+                    <td><span class="gf-act gf-act--@(s.Actividad.ToLowerInvariant().Replace(' ', '-'))">@s.Actividad</span></td>
+                    <td>@s.Sala</td>
+                    <td>
+                        @s.Confirmadas / @s.Aforo
+                        @if (s.PlazasLibres == 0)
+                        {
+                            <span class="badge text-bg-danger ms-1">Completa</span>
+                        }
+                        else
+                        {
+                            <span class="badge text-bg-success ms-1">@s.PlazasLibres libres</span>
+                        }
+                    </td>
+                    <td>@s.EnEspera</td>
+                    <td><a asp-controller="Reservas" asp-action="Estado" asp-route-id="@s.Id">Ver reservas</a></td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}

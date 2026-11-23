@@ -1,76 +1,115 @@
-﻿<!DOCTYPE html>
+@using System.Security.Claims
+@{
+    var autenticado = User.Identity?.IsAuthenticated == true;
+    var nombre = User.Identity?.Name ?? "";
+    var iniciales = nombre.Length >= 2 ? nombre[..2].ToUpperInvariant() : nombre.ToUpperInvariant();
+    var controlador = ViewContext.RouteData.Values["controller"]?.ToString();
+    var accion = ViewContext.RouteData.Values["action"]?.ToString();
+
+    var rol = User.FindFirstValue(ClaimTypes.Role);
+    var nombreRol = rol switch
+    {
+        "ADMINISTRADOR" => "Administrador/a",
+        "ENCARGADO" => "Encargado/a",
+        "RECEPCIONISTA" => "Recepcionista",
+        "CLIENTE" => "Cliente",
+        _ => ""
+    };
+
+    // Opciones del menú por rol, siguiendo el mapa de navegación del Producto 1
+    var menu = new List<(string Texto, string Controlador, string Accion)>();
+    switch (rol)
+    {
+        case "CLIENTE":
+            menu.Add(("Actividades", "Reservas", "Disponibles"));
+            menu.Add(("Mis reservas", "Reservas", "Index"));
+            break;
+        case "RECEPCIONISTA":
+            menu.Add(("Clientes", "Clientes", "Index"));
+            menu.Add(("Alta de cliente", "Clientes", "Create"));
+            menu.Add(("Horario", "Sesiones", "Index"));
+            break;
+        case "ENCARGADO":
+            menu.Add(("Actividades", "Actividades", "Index"));
+            menu.Add(("Horario", "Sesiones", "Index"));
+            menu.Add(("Monitores", "Monitores", "Index"));
+            menu.Add(("Salas", "Salas", "Index"));
+            break;
+        case "ADMINISTRADOR":
+            menu.Add(("Panel", "Home", "Index"));
+            menu.Add(("Clientes", "Clientes", "Index"));
+            menu.Add(("Actividades", "Actividades", "Index"));
+            menu.Add(("Horario", "Sesiones", "Index"));
+            menu.Add(("Monitores", "Monitores", "Index"));
+            menu.Add(("Salas", "Salas", "Index"));
+            menu.Add(("Usuarios y roles", "Usuarios", "Index"));
+            break;
+    }
+
+    // Una opción está activa si coincide el controlador y la acción; si ninguna coincide
+    // exactamente (por ejemplo, Editar), se marca la del mismo controlador.
+    var exacta = menu.FindIndex(m => m.Controlador == controlador && m.Accion == accion);
+    var activa = exacta >= 0 ? exacta : menu.FindIndex(m => m.Controlador == controlador);
+}
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - GenteFit</title>
+    <title>@ViewData["Title"] · GenteFit</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/GenteFit.Web.styles.css" asp-append-version="true" />
 </head>
 <body>
-<header>
-<nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm mb-3">
-    <div class="container-fluid">
-        <a class="navbar-brand fw-bold" asp-controller="Home" asp-action="Index">GenteFit</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menuPrincipal" aria-controls="menuPrincipal" aria-expanded="false" aria-label="Abrir menú">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="menuPrincipal">
-            <ul class="navbar-nav me-auto">
-                @if (User.Identity?.IsAuthenticated == true)
-                {
-                    @if (User.IsInRole("CLIENTE"))
+<a class="gf-saltar" href="#contenido">Saltar al contenido</a>
+<div class="gf-app">
+    <aside class="gf-sidebar">
+        <a class="gf-marca" asp-controller="Home" asp-action="Index">
+            <span class="gf-logo" aria-hidden="true">GF</span> GenteFit
+        </a>
+
+        @if (autenticado)
+        {
+            <nav aria-label="Menú principal">
+                <div class="gf-seccion">@nombreRol</div>
+                <ul class="gf-nav">
+                    @for (int i = 0; i < menu.Count; i++)
                     {
-                        <li class="nav-item"><a class="nav-link" asp-controller="Reservas" asp-action="Index">Mis reservas</a></li>
+                        var opcion = menu[i];
+                        <li>
+                            <a asp-controller="@opcion.Controlador" asp-action="@opcion.Accion"
+                               aria-current="@(i == activa ? "page" : null)">@opcion.Texto</a>
+                        </li>
                     }
-                    @if (User.IsInRole("ADMINISTRADOR") || User.IsInRole("RECEPCIONISTA"))
-                    {
-                        <li class="nav-item"><a class="nav-link" asp-controller="Clientes" asp-action="Index">Clientes</a></li>
-                    }
-                    @if (User.IsInRole("ADMINISTRADOR") || User.IsInRole("ENCARGADO"))
-                    {
-                        <li class="nav-item"><a class="nav-link" asp-controller="Actividades" asp-action="Index">Actividades</a></li>
-                        <li class="nav-item"><a class="nav-link" asp-controller="Monitores" asp-action="Index">Monitores</a></li>
-                        <li class="nav-item"><a class="nav-link" asp-controller="Salas" asp-action="Index">Salas</a></li>
-                    }
-                    @if (User.IsInRole("ADMINISTRADOR") || User.IsInRole("RECEPCIONISTA") || User.IsInRole("ENCARGADO"))
-                    {
-                        <li class="nav-item"><a class="nav-link" asp-controller="Sesiones" asp-action="Index">Sesiones</a></li>
-                    }
-                    @if (User.IsInRole("ADMINISTRADOR"))
-                    {
-                        <li class="nav-item"><a class="nav-link" asp-controller="Usuarios" asp-action="Index">Usuarios</a></li>
-                    }
-                }
+                </ul>
+            </nav>
+
+            <div class="gf-usuario">
+                <span class="gf-avatar" aria-hidden="true">@iniciales</span>
+                <div>
+                    <div class="gf-usuario__nombre">@nombre</div>
+                    <form asp-controller="Cuenta" asp-action="Logout" method="post">
+                        <button type="submit">Cerrar sesión</button>
+                    </form>
+                </div>
+            </div>
+        }
+        else
+        {
+            <ul class="gf-nav mt-4">
+                <li><a asp-controller="Cuenta" asp-action="Login">Iniciar sesión</a></li>
             </ul>
-            <ul class="navbar-nav">
-                @if (User.Identity?.IsAuthenticated == true)
-                {
-                    <li class="nav-item"><span class="nav-link">@User.Identity.Name</span></li>
-                    <li class="nav-item">
-                        <form asp-controller="Cuenta" asp-action="Logout" method="post">
-                            <button type="submit" class="btn btn-outline-secondary btn-sm mt-1">Cerrar sesión</button>
-                        </form>
-                    </li>
-                }
-                else
-                {
-                    <li class="nav-item"><a class="nav-link" asp-controller="Cuenta" asp-action="Login">Iniciar sesión</a></li>
-                }
-            </ul>
-        </div>
-    </div>
-</nav>
-</header>
-<div class="container">
-    <main role="main" class="pb-3">
+        }
+    </aside>
+
+    <main id="contenido" class="gf-main" tabindex="-1">
         @RenderBody()
     </main>
 </div>
-<footer class="border-top footer text-muted mt-4">
-    <div class="container py-3">&copy; 2026 - GenteFit</div>
-</footer>
 <script src="~/lib/jquery/dist/jquery.min.js"></script>
 <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
 <script src="~/js/site.js" asp-append-version="true"></script>

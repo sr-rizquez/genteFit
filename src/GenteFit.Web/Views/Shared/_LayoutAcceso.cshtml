@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] · GenteFit</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+<a class="gf-saltar" href="#contenido">Saltar al contenido</a>
+<div class="gf-acceso">
+    <section class="gf-acceso__portada" aria-label="GenteFit">
+        <div class="gf-marca">
+            <span class="gf-logo" aria-hidden="true">GF</span> GenteFit
+        </div>
+        <p class="gf-acceso__lema">Reserva tus clases en segundos.</p>
+        <p>Body pump, body combat, core, yoga, spinning y zumba. Consulta horarios,
+           plazas libres y tu posición en la lista de espera.</p>
+        <div class="gf-pastillas">
+            <span>Aforo de 16 plazas</span>
+            <span>Lista de espera automática</span>
+            <span>Cancelación libre</span>
+        </div>
+    </section>
+    <main id="contenido" class="gf-acceso__formulario" tabindex="-1">
+        @RenderBody()
+    </main>
+</div>
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
